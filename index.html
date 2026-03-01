@@ -3,12 +3,13 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>הארנק המשותף</title>
+    <title>הארנק שלי</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:wght@300;400;500;600&display=swap" rel="stylesheet"/>
     <script>
+        // חיבור ל-Database שלך
         const supabaseUrl = 'https://iaihwnbbebjsirlhezwb.supabase.co';
         const supabaseKey = 'sb_publishable_JOxGwNl2y2S-wUL2Xp3LLA_Xn9UxEHJ';
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
@@ -25,11 +26,9 @@
     <style>
         body { background-color: #F4F7F6; -webkit-tap-highlight-color: transparent; }
         .modern-card { transition: all 0.2s ease; border: 1px solid #edf2f7; }
-        .amount-badge { background: #e8f5e9; color: #2e7d32; }
         .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .category-pill { transition: all 0.2s; white-space: nowrap; }
-        .category-pill.active { background-color: #00C853; color: white; border-color: #00C853; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        .category-pill.active { background-color: #00C853; color: white; }
     </style>
 </head>
 <body class="text-dark font-sans pb-32">
@@ -38,10 +37,10 @@
         <div class="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mb-8">
             <span class="material-symbols-rounded text-5xl text-primary">account_balance_wallet</span>
         </div>
-        <h1 class="text-3xl font-extrabold mb-2">הארנק שלי</h1>
-        <p class="text-slate-400 mb-10">ניהול קופונים חכם ומשותף</p>
-        <button onclick="signInWithGoogle()" class="w-full max-w-xs flex items-center justify-center gap-3 bg-white border border-slate-200 p-4 rounded-2xl font-bold shadow-sm active:scale-95 transition-all">
-            <img src="https://www.google.com/favicon.ico" class="w-5 h-5"> התחבר עם Google
+        <h1 class="text-3xl font-extrabold mb-2 text-slate-800">הארנק שלי</h1>
+        <p class="text-slate-400 mb-10 text-lg">אייל & רחל • קופונים משותפים</p>
+        <button onclick="signInWithGoogle()" class="w-full max-w-xs flex items-center justify-center gap-3 bg-white border border-slate-200 p-5 rounded-2xl font-bold shadow-sm active:scale-95 transition-all text-slate-700">
+            <img src="https://www.google.com/favicon.ico" class="w-5 h-5"> התחברות מהירה עם Google
         </button>
     </div>
 
@@ -50,8 +49,14 @@
             <span class="material-symbols-rounded text-5xl text-pending">lock_person</span>
         </div>
         <h2 class="text-2xl font-bold mb-2">ממתין לאישור מנהל</h2>
-        <p class="text-slate-500">החשבון נוצר בהצלחה. אייל יאשר אותך בקרוב.</p>
-        <button onclick="signOut()" class="mt-8 text-slate-400 underline font-bold text-sm">התנתק</button>
+        <p class="text-slate-500 mb-8">החשבון נוצר. אייל צריך לאשר אותך בבסיס הנתונים כדי שתוכל לראות את הקופונים.</p>
+        
+        <a href="https://wa.me/97250XXXXXXX?text=היי אייל, נרשמתי לארנק הקופונים, אשמח אם תאשר אותי" 
+           class="w-full max-w-xs bg-[#25D366] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform mb-4">
+            <span class="material-symbols-rounded">chat</span> שלח הודעה לאייל לאישור
+        </a>
+
+        <button onclick="signOut()" class="text-slate-400 underline font-bold text-sm">התנתק</button>
     </div>
 
     <div id="app-content" class="hidden">
@@ -60,9 +65,9 @@
                 <h1 class="text-2xl font-extrabold text-dark tracking-tight leading-none mb-1">הארנק שלי</h1>
                 <p id="coupon-count" class="text-[10px] text-slate-400 font-bold uppercase tracking-widest"></p>
             </div>
-            <div class="flex items-center gap-4 text-left">
-                <div>
-                    <p class="text-[10px] text-slate-400 font-bold leading-none mb-1">סה"כ שווי</p>
+            <div class="flex items-center gap-4">
+                <div class="text-left">
+                    <p class="text-[10px] text-slate-400 font-bold leading-none mb-1 text-left">סה"כ שווי</p>
                     <h2 id="total-value" class="text-xl font-black text-primary leading-none">₪0</h2>
                 </div>
                 <button onclick="signOut()" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300">
@@ -76,9 +81,7 @@
                 <span class="material-symbols-rounded text-slate-300">search</span>
                 <input type="text" id="searchInput" onkeyup="render()" placeholder="חפש מותג..." class="w-full py-4 outline-none bg-transparent font-medium text-lg">
             </div>
-
             <div id="categories-bar" class="flex gap-2 overflow-x-auto no-scrollbar pb-2"></div>
-
             <div id="main-container" class="space-y-4 pt-2"></div>
         </main>
 
@@ -90,19 +93,18 @@
     <div id="editModal" class="hidden fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm">
         <div class="bg-white rounded-t-[2.5rem] sm:rounded-3xl w-full max-w-md p-8 shadow-2xl">
             <div class="flex justify-between items-center mb-8">
-                <h3 id="modalTitle" class="text-xl font-extrabold">פרטי קופון</h3>
+                <h3 id="modalTitle" class="text-xl font-extrabold text-slate-800">פרטי קופון</h3>
                 <button onclick="closeEdit()" class="text-slate-300"><span class="material-symbols-rounded">close</span></button>
             </div>
             <div class="space-y-4">
                 <input type="hidden" id="edit_id">
-                <input type="text" id="edit_company" list="companiesList" placeholder="שם המותג (למשל: דרים קארד)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold border border-transparent focus:border-primary/10">
-                <datalist id="companiesList"></datalist>
+                <input type="text" id="edit_company" placeholder="שם המותג" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold border border-transparent focus:border-primary/10">
                 <div class="grid grid-cols-2 gap-4">
                     <input type="text" id="edit_value" placeholder="שווי (₪)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold">
                     <input type="date" id="edit_expiry" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold text-right">
                 </div>
-                <input type="text" id="edit_code" placeholder="קוד קופון / לינק לאתר" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold">
-                <input type="text" id="edit_category" placeholder="קטגוריה (למשל: מזון, פארם)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold">
+                <input type="text" id="edit_code" placeholder="קוד קופון / לינק" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold">
+                <input type="text" id="edit_category" placeholder="קטגוריה (מזון, פארם...)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold">
                 <button onclick="saveToCloud()" class="w-full bg-primary text-white py-5 rounded-2xl font-bold text-lg mt-4 shadow-lg shadow-primary/10 active:scale-95 transition-transform">שמור בארנק</button>
             </div>
         </div>
@@ -113,32 +115,39 @@
         let profile = null;
         let selectedCategory = 'הכל';
 
+        // המוח של האפליקציה - בודק הרשאות ואישורים
         async function checkUser() {
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (session) {
-                    const { data: userProfile, error } = await supabaseClient
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .maybeSingle();
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                const { data: userProfile } = await supabaseClient
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .maybeSingle();
 
-                    if (userProfile) {
-                        profile = userProfile;
-                        document.getElementById('login-screen').classList.add('hidden');
-                        if (profile.is_approved) {
-                            document.getElementById('app-content').classList.remove('hidden');
-                            document.getElementById('pending-screen').classList.add('hidden');
-                            loadFromCloud();
-                        } else {
-                            document.getElementById('pending-screen').classList.remove('hidden');
-                        }
+                if (userProfile) {
+                    profile = userProfile;
+                    document.getElementById('login-screen').classList.add('hidden');
+                    
+                    if (profile.is_approved === true) {
+                        document.getElementById('app-content').classList.remove('hidden');
+                        document.getElementById('pending-screen').classList.add('hidden');
+                        loadFromCloud();
+                    } else {
+                        document.getElementById('pending-screen').classList.remove('hidden');
+                        document.getElementById('app-content').classList.add('hidden');
                     }
                 }
-            } catch (e) { console.error("Auth error:", e); }
+            }
         }
 
-        async function signInWithGoogle() { await supabaseClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); }
+        async function signInWithGoogle() { 
+            await supabaseClient.auth.signInWithOAuth({ 
+                provider: 'google', 
+                options: { redirectTo: window.location.origin } 
+            }); 
+        }
+
         async function signOut() { await supabaseClient.auth.signOut(); window.location.reload(); }
 
         async function loadFromCloud() {
@@ -147,20 +156,16 @@
         }
 
         function updateCategories() {
-            const cats = ['הכל', ...new Set(allCoupons.map(c => c.category || 'כללי'))].filter(Boolean);
+            const cats = ['הכל', ...new Set(allCoupons.map(c => c.category || 'כללי'))];
             const bar = document.getElementById('categories-bar');
             bar.innerHTML = cats.map(c => `
-                <button onclick="filterCat('${c}')" class="category-pill px-5 py-2 rounded-full border border-slate-200 bg-white text-xs font-bold ${selectedCategory === c ? 'active shadow-md shadow-primary/20' : 'text-slate-400'}">
+                <button onclick="filterCat('${c}')" class="px-5 py-2 rounded-full border border-slate-200 bg-white text-xs font-bold ${selectedCategory === c ? 'bg-primary text-white border-primary shadow-md' : 'text-slate-400'}">
                     ${c}
                 </button>
             `).join('');
         }
 
-        function filterCat(cat) {
-            selectedCategory = cat;
-            updateCategories();
-            render();
-        }
+        function filterCat(cat) { selectedCategory = cat; updateCategories(); render(); }
 
         function render() {
             const query = document.getElementById('searchInput').value.toLowerCase();
@@ -170,7 +175,6 @@
             allCoupons.forEach(c => {
                 const matchSearch = (c.company || "").toLowerCase().includes(query);
                 const matchCat = selectedCategory === 'הכל' || (c.category || 'כללי') === selectedCategory;
-
                 if (matchSearch && matchCat) {
                     const name = c.company || "אחר";
                     if (!grouped[name]) grouped[name] = { list: [], sum: 0 };
@@ -194,29 +198,23 @@
                                 <h3 class="font-extrabold text-slate-800">${name}</h3>
                             </div>
                             <div class="flex items-center gap-3">
-                                <span class="amount-badge px-3 py-1 rounded-full text-[10px] font-black tracking-tighter">₪${g.sum.toLocaleString()}</span>
+                                <span class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-[10px] font-black tracking-tighter">₪${g.sum.toLocaleString()}</span>
                                 <span class="material-symbols-rounded text-slate-200 transition-transform" id="icon-${idx}">expand_more</span>
                             </div>
                         </div>
                         <div id="group-${idx}" class="hidden px-5 pb-5 space-y-3">
                             ${g.list.map(c => {
-                                const isLink = c.code_or_link && (c.code_or_link.includes('http') || c.code_or_link.includes('.co.il') || c.code_or_link.includes('.com'));
+                                const isLink = c.code_or_link && (c.code_or_link.includes('http') || c.code_or_link.includes('.co.il'));
                                 return `
                                 <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                                     <div class="flex justify-between items-start mb-4">
-                                        <div>
-                                            <p class="text-xl font-black text-primary leading-none mb-1">${c.value}</p>
-                                            <p class="text-[10px] font-bold text-slate-300 uppercase">${c.expiry_date || 'ללא תוקף'}</p>
-                                        </div>
+                                        <div><p class="text-xl font-black text-primary mb-1">${c.value}</p><p class="text-[10px] font-bold text-slate-300">${c.expiry_date || 'ללא תוקף'}</p></div>
                                         <span class="text-[10px] bg-white px-2 py-1 rounded-lg text-slate-400 font-bold border border-slate-100">${c.category || 'כללי'}</span>
                                     </div>
                                     <div class="bg-white/50 p-3 rounded-xl text-center font-mono text-xs text-slate-400 border border-dashed border-slate-200 mb-4 truncate select-all">${c.code_or_link}</div>
                                     <div class="flex gap-2">
-                                        ${isLink ? `
-                                            <button onclick="window.open('${c.code_or_link.startsWith('http') ? c.code_or_link : 'https://' + c.code_or_link}', '_blank')" class="flex-1 bg-primary text-white py-3 rounded-xl text-xs font-bold shadow-md active:scale-95 transition-transform flex items-center justify-center gap-2">
-                                                <span class="material-symbols-rounded text-sm">open_in_new</span> פתח אתר
-                                            </button>` : ''}
-                                        <button onclick="copy('${c.code_or_link}')" class="${isLink ? 'w-24' : 'flex-1'} bg-dark text-white py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform">העתק קוד</button>
+                                        ${isLink ? `<button onclick="window.open('${c.code_or_link.startsWith('http') ? c.code_or_link : 'https://' + c.code_or_link}', '_blank')" class="flex-1 bg-primary text-white py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2"><span class="material-symbols-rounded text-sm">open_in_new</span>פתח אתר</button>` : ''}
+                                        <button onclick="copy('${c.code_or_link}')" class="${isLink ? 'w-24' : 'flex-1'} bg-dark text-white py-3 rounded-xl text-xs font-bold">העתק</button>
                                         <button onclick="openEdit(${c.id})" class="bg-white p-3 rounded-xl text-slate-300 border border-slate-100"><span class="material-symbols-rounded text-sm">edit</span></button>
                                         <button onclick="deleteFromCloud(${c.id})" class="bg-white p-3 rounded-xl text-red-300 border border-slate-100"><span class="material-symbols-rounded text-sm">delete</span></button>
                                     </div>
