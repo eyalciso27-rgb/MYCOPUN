@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#195de6",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="max-w-md mx-auto min-h-screen flex flex-col bg-white dark:bg-background-dark shadow-xl relative overflow-hidden">
+<!-- Top Header -->
+<header class="flex items-center justify-between px-6 pt-8 pb-4">
+<h1 class="text-3xl font-bold tracking-tight">חיפוש</h1>
+<button class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</header>
+<!-- Large Search Bar -->
+<div class="px-6 py-2">
+<div class="relative group">
+<div class="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400">search</span>
+</div>
+<input class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl py-4 pr-12 pl-4 text-lg focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-400" placeholder="מותגים, חנויות או קופונים" type="text"/>
+</div>
+</div>
+<!-- Categories Section -->
+<section class="px-6 pt-8">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-xl font-bold">קטגוריות</h2>
+<button class="text-primary text-sm font-semibold">הכל</button>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<!-- Category Card: Food -->
+<div class="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col items-start gap-3 hover:border-primary/30 transition-colors cursor-pointer">
+<div class="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center text-orange-600">
+<span class="material-symbols-outlined text-3xl">restaurant</span>
+</div>
+<span class="font-bold text-base">אוכל ומסעדות</span>
+</div>
+<!-- Category Card: Fashion -->
+<div class="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col items-start gap-3 hover:border-primary/30 transition-colors cursor-pointer">
+<div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center text-purple-600">
+<span class="material-symbols-outlined text-3xl">checkroom</span>
+</div>
+<span class="font-bold text-base">אופנה וסטייל</span>
+</div>
+<!-- Category Card: Electronics -->
+<div class="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col items-start gap-3 hover:border-primary/30 transition-colors cursor-pointer">
+<div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center text-blue-600">
+<span class="material-symbols-outlined text-3xl">devices</span>
+</div>
+<span class="font-bold text-base">אלקטרוניקה</span>
+</div>
+<!-- Category Card: Entertainment -->
+<div class="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col items-start gap-3 hover:border-primary/30 transition-colors cursor-pointer">
+<div class="w-12 h-12 bg-pink-100 dark:bg-pink-900/30 rounded-lg flex items-center justify-center text-pink-600">
+<span class="material-symbols-outlined text-3xl">confirmation_number</span>
+</div>
+<span class="font-bold text-base">פנאי ובידור</span>
+</div>
+</div>
+</section>
+<!-- Recent Searches Section -->
+<section class="px-6 pt-10 pb-24">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-xl font-bold">חיפושים אחרונים</h2>
+<button class="text-slate-400 text-sm font-medium">נקה הכל</button>
+</div>
+<div class="space-y-1">
+<div class="flex items-center gap-4 py-3 border-b border-slate-50 dark:border-slate-800">
+<span class="material-symbols-outlined text-slate-400">history</span>
+<span class="flex-1 font-medium">אדידס עודפים</span>
+<span class="material-symbols-outlined text-slate-300 text-sm rotate-45">arrow_upward</span>
+</div>
+<div class="flex items-center gap-4 py-3 border-b border-slate-50 dark:border-slate-800">
+<span class="material-symbols-outlined text-slate-400">history</span>
+<span class="flex-1 font-medium">קפה ומאפה</span>
+<span class="material-symbols-outlined text-slate-300 text-sm rotate-45">arrow_upward</span>
+</div>
+<div class="flex items-center gap-4 py-3 border-b border-slate-50 dark:border-slate-800">
+<span class="material-symbols-outlined text-slate-400">history</span>
+<span class="flex-1 font-medium">כרטיסי קולנוע</span>
+<span class="material-symbols-outlined text-slate-300 text-sm rotate-45">arrow_upward</span>
+</div>
+</div>
+</section>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/80 dark:bg-background-dark/80 backdrop-blur-lg border-t border-slate-100 dark:border-slate-800 px-6 py-3 flex justify-between items-center z-50">
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="text-[10px] font-bold">ארנק</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined font-variation-fill">search</span>
+<span class="text-[10px] font-bold">חיפוש</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">local_offer</span>
+<span class="text-[10px] font-bold">הטבות</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold">פרופיל</span>
+</a>
+</nav>
+</div>
+</body></html>

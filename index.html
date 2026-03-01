@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>הארנק שלי - Cloud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <script>
+        // פרטי החיבור ל-Supabase שלך
+        const supabaseUrl = 'https://iaihwnbbebjsirlhezwb.supabase.co';
+        const supabaseKey = 'sb_publishable_JOxGwNl2y2S-wUL2Xp3LLA_Xn9UxEHJ';
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        tailwind.config = { theme: { extend: { colors: { primary: "#195de6" } } } }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 pb-24 font-sans">
+
+    <div id="login-screen" class="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center p-6 text-center">
+        <div class="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mb-6 text-primary">
+            <span class="material-symbols-outlined text-5xl">wallet</span>
+        </div>
+        <h1 class="text-3xl font-black mb-2 text-slate-900">הארנק שלי</h1>
+        <p class="text-slate-500 mb-10">התחבר כדי לצפות בקופונים שלך</p>
+        <button onclick="signInWithGoogle()" class="w-full max-w-xs flex items-center justify-center gap-3 bg-white border border-slate-200 p-4 rounded-2xl font-bold shadow-sm active:scale-95 transition-all">
+            <img src="https://www.google.com/favicon.ico" class="w-5 h-5">
+            התחבר באמצעות Google
+        </button>
+    </div>
+
+    <div id="app-content" class="hidden">
+        <header class="bg-white p-6 sticky top-0 z-30 shadow-sm rounded-b-3xl">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-2xl font-black">הארנק שלי</h1>
+                <button onclick="signOut()" class="text-red-500 text-xs font-bold bg-red-50 px-3 py-1 rounded-full">התנתק</button>
+            </div>
+            <div class="bg-primary p-4 rounded-2xl text-white shadow-lg">
+                <p class="text-xs opacity-80">שווי כולל</p>
+                <h2 id="total-value" class="text-3xl font-bold">₪0</h2>
+            </div>
+        </header>
+
+        <main class="p-4 space-y-4">
+            <div class="bg-white p-3 rounded-xl shadow-sm flex items-center gap-2 border border-slate-200">
+                <span class="material-symbols-outlined text-slate-400">search</span>
+                <input type="text" id="searchInput" onkeyup="render()" placeholder="חפש מותג או קוד..." class="w-full outline-none bg-transparent">
+            </div>
+            <div id="main-container" class="space-y-3"></div>
+        </main>
+
+        <button onclick="openAddModal()" class="fixed bottom-24 left-6 z-40 h-16 w-16 rounded-full bg-primary text-white shadow-xl flex items-center justify-center transition-transform active:scale-90">
+            <span class="material-symbols-outlined text-[36px]">add</span>
+        </button>
+    </div>
+
+    <div id="editModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl w-full max-w-md p-6 relative shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="modalTitle" class="text-xl font-bold">הוספת קופון</h3>
+                <button onclick="closeEdit()"><span class="material-symbols-outlined text-slate-400">close</span></button>
+            </div>
+            <div class="space-y-4">
+                <input type="hidden" id="edit_id">
+                <div class="relative">
+                    <input type="text" id="edit_company" list="companiesList" placeholder="שם המותג" class="w-full p-3 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-primary/20">
+                    <datalist id="companiesList"></datalist>
+                </div>
+                <input type="text" id="edit_title" placeholder="תיאור (לא חובה)" class="w-full p-3 bg-slate-100 rounded-xl outline-none">
+                <input type="text" id="edit_value" placeholder="שווי (₪)" class="w-full p-3 bg-slate-100 rounded-xl outline-none">
+                <input type="text" id="edit_code" placeholder="קוד או קישור" class="w-full p-3 bg-slate-100 rounded-xl outline-none">
+                <div class="flex gap-2 pt-2">
+                    <button onclick="saveToCloud()" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">שמור בענן</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allCoupons = [];
+        let user = null;
+
+        // 1. בדיקת התחברות
+        async function checkUser() {
+            const { data } = await supabaseClient.auth.getSession();
+            if (data.session) {
+                user = data.session.user;
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+                loadFromCloud();
+            }
+        }
+
+        async function signInWithGoogle() {
+            const { error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.origin }
+            });
+            if (error) alert("שגיאה בהתחברות: " + error.message);
+        }
+
+        async function signOut() {
+            await supabaseClient.auth.signOut();
+            window.location.reload();
+        }
+
+        // 2. ניהול נתונים מול Supabase
+        async function loadFromCloud() {
+            const { data, error } = await supabaseClient
+                .from('coupons')
+                .select('*')
+                .order('company', { ascending: true });
+            
+            if (data) {
+                allCoupons = data;
+                updateAutocomplete();
+                render();
+            }
+        }
+
+        function updateAutocomplete() {
+            const list = [...new Set(allCoupons.map(c => c.company))];
+            document.getElementById('companiesList').innerHTML = list.map(name => `<option value="${name}">`).join('');
+        }
+
+        function render() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('main-container');
+            const grouped = {};
+            let total = 0;
+
+            allCoupons.filter(c => 
+                (c.company || "").toLowerCase().includes(query) || 
+                (c.code_or_link || "").includes(query)
+            ).forEach(c => {
+                const name = c.company || "אחר";
+                if (!grouped[name]) grouped[name] = [];
+                grouped[name].push(c);
+                total += parseFloat(String(c.value).replace(/[^0-9.]/g, '')) || 0;
+            });
+
+            document.getElementById('total-value').innerText = `₪${total.toLocaleString()}`;
+            container.innerHTML = '';
+
+            Object.keys(grouped).forEach((name, idx) => {
+                const group = grouped[name];
+                container.innerHTML += `
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-3">
+                        <div onclick="toggleGroup(${idx})" class="p-4 flex justify-between items-center cursor-pointer active:bg-slate-50">
+                            <span class="font-bold text-slate-900">${name} (${group.length})</span>
+                            <span class="material-symbols-outlined text-slate-300 transition-transform" id="icon-${idx}">expand_more</span>
+                        </div>
+                        <div id="group-${idx}" class="hidden p-4 bg-slate-50/50 border-t space-y-3">
+                            ${group.map(c => `
+                                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                    <div class="flex justify-between font-bold mb-2 text-sm">
+                                        <span class="text-slate-500">${c.title || 'קופון'}</span>
+                                        <span class="text-primary font-black">${c.value}</span>
+                                    </div>
+                                    <div class="bg-slate-50 p-2 rounded text-center font-mono text-xs break-all mb-3 text-slate-600 border border-dashed">${c.code_or_link}</div>
+                                    <div class="flex gap-2">
+                                        <button onclick="copy('${c.code_or_link}')" class="flex-1 bg-slate-800 text-white py-2 rounded-lg text-xs font-bold">העתק</button>
+                                        <button onclick="openEdit(${c.id})" class="bg-slate-100 p-2 rounded-lg text-slate-600"><span class="material-symbols-outlined text-sm">edit</span></button>
+                                        <button onclick="deleteFromCloud(${c.id})" class="bg-red-50 p-2 rounded-lg text-red-500"><span class="material-symbols-outlined text-sm">delete</span></button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function toggleGroup(idx) {
+            const el = document.getElementById(`group-${idx}`);
+            const icon = document.getElementById(`icon-${idx}`);
+            el.classList.toggle('hidden');
+            icon.style.transform = el.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+
+        // 3. הוספה/עריכה לענן
+        function openAddModal() {
+            document.getElementById('edit_id').value = 'new';
+            document.getElementById('edit_company').value = '';
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function openEdit(id) {
+            const c = allCoupons.find(x => x.id === id);
+            document.getElementById('edit_id').value = c.id;
+            document.getElementById('edit_company').value = c.company;
+            document.getElementById('edit_title').value = c.title || '';
+            document.getElementById('edit_value').value = c.value;
+            document.getElementById('edit_code').value = c.code_or_link;
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEdit() { document.getElementById('editModal').classList.add('hidden'); }
+
+        async function saveToCloud() {
+            const id = document.getElementById('edit_id').value;
+            const payload = {
+                company: document.getElementById('edit_company').value,
+                title: document.getElementById('edit_title').value,
+                value: document.getElementById('edit_value').value,
+                code_or_link: document.getElementById('edit_code').value
+            };
+
+            if (id === 'new') {
+                await supabaseClient.from('coupons').insert([payload]);
+            } else {
+                await supabaseClient.from('coupons').update(payload).eq('id', id);
+            }
+            closeEdit();
+            loadFromCloud();
+        }
+
+        async function deleteFromCloud(id) {
+            if (confirm("למחוק לצמיתות?")) {
+                await supabaseClient.from('coupons').delete().eq('id', id);
+                loadFromCloud();
+            }
+        }
+
+        function copy(t) { navigator.clipboard.writeText(t); alert('הועתק!'); }
+
+        window.onload = checkUser;
+    </script>
+</body>
+</html>

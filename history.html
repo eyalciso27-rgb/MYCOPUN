@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#195de6",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                        "slate-custom": "#4e6797",
+                        "slate-dark": "#0e121b"
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "system-ui", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .filled-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-dark dark:text-slate-100 min-h-screen">
+<div class="max-w-md mx-auto bg-background-light dark:bg-background-dark min-h-screen flex flex-col relative overflow-x-hidden">
+<!-- Header -->
+<header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center justify-between px-4 py-4">
+<button class="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined text-2xl">arrow_forward</span>
+</button>
+<h1 class="text-xl font-bold tracking-tight">היסטוריית קופונים</h1>
+<div class="w-10"></div> <!-- Spacer for centering -->
+</div>
+<!-- Tabs -->
+<div class="flex px-4 gap-8">
+<button class="flex flex-col items-center justify-center border-b-2 border-primary pb-3 pt-2">
+<span class="text-sm font-bold text-primary">נוצלו</span>
+</button>
+<button class="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-custom dark:text-slate-400 pb-3 pt-2">
+<span class="text-sm font-medium">פגו תוקף</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-4 py-6 space-y-6">
+<!-- Section: Recent History -->
+<section>
+<h2 class="text-xs font-semibold uppercase tracking-wider text-slate-custom dark:text-slate-500 mb-4 px-1">שימוש לאחרונה</h2>
+<div class="space-y-3">
+<!-- Coupon Card 1 (Used) -->
+<div class="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between group opacity-80">
+<div class="flex items-center gap-4">
+<div class="size-14 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-50 dark:border-slate-700">
+<img class="w-full h-full object-cover grayscale" data-alt="Supermarket grocery store logo minimalist" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwadGD6XcwIbsUoXOlZLP1eKIaevqgN0CMHIRiSnm0L8rWPdl24b9_wpV8yu8YO0K_nao6F7bkvCnB6yf9-ukWyW3048wjUOtQVG629DCpJleLbTTTD-e3U3wxyDynEHqnIZlxNF4To7r6-9vzfHxV8cf0yIXZW18rIJ34xXSZbA8e1Wo0E9MvexbX4U0959CcvJUOiDdCL9YYt4jWBs2ICgshJvYC_B0k4zPtIsOWlJqdTyAAoHZ0IGEK61SrutZdkuqo1lDXuh4"/>
+</div>
+<div class="flex flex-col">
+<h3 class="font-bold text-slate-dark dark:text-slate-100">שופרסל</h3>
+<p class="text-sm text-slate-custom dark:text-slate-400">50 ₪ • נוצל ב-12/08/2023</p>
+</div>
+</div>
+<div class="text-green-600 dark:text-green-500">
+<span class="material-symbols-outlined filled-icon text-2xl">check_circle</span>
+</div>
+</div>
+<!-- Coupon Card 2 (Used) -->
+<div class="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between group opacity-80">
+<div class="flex items-center gap-4">
+<div class="size-14 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-50 dark:border-slate-700">
+<img class="w-full h-full object-cover grayscale" data-alt="Fast food restaurant burger logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvbnYZD3UqZCZxwFGQ8khpKHgHg81MMMeiiqVr04Hs3lfEoGyolh39kv-CgWtoVM8GFvF3uSAv4X6LL6q9TMvD-nXwwzGy5PgWsHFw0_kprG5VpTrUfThHJ6oXvsRBasZ2hDcAnAJxpubv5-CrLJgmB7xIm6KI7MDBII_cIICQNGjdxWmJtOwcptAZdOX5FIIorbMSgiOK88w_pYoEzzBzRwrDzUFnpvN_xKqC2LC8a2IL0OncA_ORp88QBqrVlkwpF4n7ljDyaVo"/>
+</div>
+<div class="flex flex-col">
+<h3 class="font-bold text-slate-dark dark:text-slate-100">מקדונלדס</h3>
+<p class="text-sm text-slate-custom dark:text-slate-400">ארוחת צהריים • נוצל ב-10/08/2023</p>
+</div>
+</div>
+<div class="text-green-600 dark:text-green-500">
+<span class="material-symbols-outlined filled-icon text-2xl">check_circle</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Expired/Older -->
+<section>
+<h2 class="text-xs font-semibold uppercase tracking-wider text-slate-custom dark:text-slate-500 mb-4 px-1">פגו תוקף</h2>
+<div class="space-y-3">
+<!-- Coupon Card 3 (Expired) -->
+<div class="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between group opacity-60">
+<div class="flex items-center gap-4">
+<div class="size-14 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-50 dark:border-slate-700">
+<img class="w-full h-full object-cover grayscale" data-alt="Fashion boutique clothing store logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9F2Mu95NMEhTpvmLTf0FIujTam_btIeDZfFclAHbjDPZdIZaTRJ_PwMpE9NJ4GzpMvuPtrTwAvMG-R8nGea18lVf2niFN5a_P7U_TvFl71OeQK-LY0TkAJtHNM0nNZ6SZL7gSVUUqLj_tvemP_AyslM7GjeZuRalV6cfTf04fhLkz-XMDWTM6wHXkduGg9pg9KYLX1OFfhD10FnzajHGXy4KjQxvVAeDPqINaAt9dgfFsvoI9ot6aFm0ZiiR2OG55gQlZv6Ux0pw"/>
+</div>
+<div class="flex flex-col">
+<h3 class="font-bold text-slate-dark dark:text-slate-100">H&amp;M</h3>
+<p class="text-sm text-slate-custom dark:text-slate-400">15% הנחה • פג תוקף ב-01/08/2023</p>
+</div>
+</div>
+<div class="text-slate-400 dark:text-slate-600">
+<span class="material-symbols-outlined text-2xl">event_busy</span>
+</div>
+</div>
+<!-- Coupon Card 4 (Expired) -->
+<div class="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between group opacity-60">
+<div class="flex items-center gap-4">
+<div class="size-14 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-50 dark:border-slate-700">
+<img class="w-full h-full object-cover grayscale" data-alt="Cozy coffee shop cafe logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCh0SKr6s878F7fq3ZFwGnatNCWK1i-8GXkGAU-V1KasS1gRmJ2PVNjmBhMcGyrtd-lOQBaOCtznLzCEr8ugWui1LxKLSbXeoX6KQSlQbL5bSBTaQXvRN02wqBluCZdOgciHlWw7zeimRrgPUNcq6d0KiqyeHj6bbPcZE0cI-qja59DLHas3dhj9ZR_Ip1BMf5gyJuksubxh3mYz52id6II44gI0THSuuWGVhUbCvO1-cmZdazLtvBkrLum-9jsprHFg-X41H5BGqo"/>
+</div>
+<div class="flex flex-col">
+<h3 class="font-bold text-slate-dark dark:text-slate-100">קפה קפה</h3>
+<p class="text-sm text-slate-custom dark:text-slate-400">קפה ומאפה • פג תוקף ב-28/07/2023</p>
+</div>
+</div>
+<div class="text-slate-400 dark:text-slate-600">
+<span class="material-symbols-outlined text-2xl">event_busy</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="sticky bottom-0 bg-white/90 dark:bg-slate-950/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 pb-safe pb-4 pt-2">
+<div class="flex justify-around items-center px-2">
+<a class="flex flex-col items-center gap-1 p-2 text-slate-custom dark:text-slate-500" href="#">
+<span class="material-symbols-outlined text-[26px]">account_balance_wallet</span>
+<span class="text-[10px] font-medium leading-none">ארנק</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-primary" href="#">
+<span class="material-symbols-outlined filled-icon text-[26px]">history</span>
+<span class="text-[10px] font-medium leading-none">היסטוריה</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-slate-custom dark:text-slate-500" href="#">
+<span class="material-symbols-outlined text-[26px]">sell</span>
+<span class="text-[10px] font-medium leading-none">מבצעים</span>
+</a>
+<a class="flex flex-col items-center gap-1 p-2 text-slate-custom dark:text-slate-500" href="#">
+<span class="material-symbols-outlined text-[26px]">person</span>
+<span class="text-[10px] font-medium leading-none">פרופיל</span>
+</a>
+</div>
+</nav>
+<!-- Bottom Safe Area Spacer -->
+<div class="h-6 bg-white dark:bg-slate-950 lg:hidden"></div>
+</div>
+</body></html>
