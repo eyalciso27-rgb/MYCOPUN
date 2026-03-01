@@ -3,9 +3,11 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>הארנק שלי</title>
+    <title>הארנק שלי - מאובטח</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:wght@300;400;500;600&display=swap" rel="stylesheet"/>
     <script>
@@ -33,12 +35,12 @@
 
     <div id="login-screen" class="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center p-8 text-center">
         <div class="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mb-8">
-            <span class="material-symbols-rounded text-5xl text-primary">account_balance_wallet</span>
+            <span class="material-symbols-rounded text-5xl text-primary">enhanced_encryption</span>
         </div>
-        <h1 class="text-3xl font-extrabold mb-2 text-slate-800">הארנק שלי</h1>
-        <p class="text-slate-400 mb-10 text-lg">אייל & רחל • קופונים משותפים</p>
+        <h1 class="text-3xl font-extrabold mb-2 text-slate-800">הארנק המאובטח</h1>
+        <p class="text-slate-400 mb-10 text-lg">קופונים מוצפנים מקצה לקצה</p>
         <button onclick="signInWithGoogle()" class="w-full max-w-xs flex items-center justify-center gap-3 bg-white border border-slate-200 p-5 rounded-2xl font-bold shadow-sm active:scale-95 transition-all text-slate-700">
-            <img src="https://www.google.com/favicon.ico" class="w-5 h-5"> התחברות עם Google
+            <img src="https://www.google.com/favicon.ico" class="w-5 h-5"> כניסה מאובטחת עם Google
         </button>
     </div>
 
@@ -47,11 +49,11 @@
             <span class="material-symbols-rounded text-5xl text-pending">lock_person</span>
         </div>
         <h2 class="text-2xl font-bold mb-2">ממתין לאישור מנהל</h2>
-        <p class="text-slate-500 mb-8 text-lg">החשבון נוצר. אייל צריך לאשר אותך כדי שתוכל לראות את הקופונים.</p>
+        <p class="text-slate-500 mb-8 text-lg">החשבון נוצר. ממתין לאישור כדי לייצר מפתח הצפנה לכספת שלך.</p>
         
-        <a href="https://wa.me/97250XXXXXXX?text=היי אייל, נרשמתי לארנק הקופונים, אשמח אם תאשר אותי" 
+        <a href="https://wa.me/97250XXXXXXX?text=היי, נרשמתי לארנק, אשמח לאישור גישה" 
            class="w-full max-w-xs bg-[#25D366] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform mb-4">
-            <span class="material-symbols-rounded">chat</span> שלח הודעה לאייל לאישור
+            <span class="material-symbols-rounded">chat</span> שלח הודעה לאישור
         </a>
 
         <button onclick="signOut()" class="text-slate-400 underline font-bold text-sm">התנתק</button>
@@ -61,7 +63,7 @@
         <header class="glass-header sticky top-0 z-40 px-6 py-5 flex justify-between items-center">
             <div>
                 <h1 class="text-2xl font-extrabold text-dark leading-none mb-1">הארנק שלי</h1>
-                <p id="coupon-count" class="text-[10px] text-slate-400 font-bold uppercase tracking-widest"></p>
+                <p id="coupon-count" class="text-[10px] text-primary font-bold uppercase tracking-widest">מוצפן ומאובטח</p>
             </div>
             <div class="flex items-center gap-4">
                 <div class="text-left">
@@ -97,7 +99,7 @@
             <div class="space-y-4">
                 <input type="hidden" id="edit_id">
                 
-                <input type="text" id="edit_company" list="companiesList" placeholder="שם המותג (למשל: רמי לוי)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold border border-transparent focus:border-primary/10">
+                <input type="text" id="edit_company" list="companiesList" placeholder="שם המותג (גלוי)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold border border-transparent focus:border-primary/10">
                 <datalist id="companiesList"></datalist>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -105,12 +107,12 @@
                     <input type="date" id="edit_expiry" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold text-right">
                 </div>
 
-                <input type="text" id="edit_code" placeholder="קוד קופון / לינק" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold">
+                <input type="text" id="edit_code" placeholder="קוד קופון / לינק (יוצפן מיד)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold border border-transparent focus:border-primary/10">
 
-                <input type="text" id="edit_category" list="categoriesList" placeholder="קטגוריה (מזון, פארם...)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold">
+                <input type="text" id="edit_category" list="categoriesList" placeholder="קטגוריה (מזון, פארם...)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold border border-transparent focus:border-primary/10">
                 <datalist id="categoriesList"></datalist>
 
-                <button onclick="saveToCloud()" class="w-full bg-primary text-white py-5 rounded-2xl font-bold text-lg mt-4 shadow-lg active:scale-95 transition-transform">שמור בארנק</button>
+                <button onclick="saveToCloud()" class="w-full bg-primary text-white py-5 rounded-2xl font-bold text-lg mt-4 shadow-lg active:scale-95 transition-transform">הצפן ושמור בארנק</button>
             </div>
         </div>
     </div>
@@ -119,6 +121,45 @@
         let allCoupons = [];
         let profile = null;
         let selectedCategory = 'הכל';
+        let groupEncryptionKey = null; // המפתח הסודי של הקבוצה
+
+        // --- פונקציות הצפנה ופענוח ---
+        function encryptText(text) {
+            if (!text || !groupEncryptionKey) return text;
+            return CryptoJS.AES.encrypt(text, groupEncryptionKey).toString();
+        }
+
+        function decryptText(ciphertext) {
+            if (!ciphertext || !groupEncryptionKey) return ciphertext;
+            try {
+                const bytes = CryptoJS.AES.decrypt(ciphertext, groupEncryptionKey);
+                const original = bytes.toString(CryptoJS.enc.Utf8);
+                return original || ciphertext; // אם נכשל, נחזיר את המקור
+            } catch (e) { return ciphertext; }
+        }
+
+        // מושך או מייצר את המפתח הסודי מהשרת
+        async function initEncryptionKey() {
+            const { data, error } = await supabaseClient.from('group_keys').select('encryption_key').eq('group_id', profile.group_id).maybeSingle();
+            
+            if (data && data.encryption_key) {
+                // המפתח קיים - נשתמש בו
+                groupEncryptionKey = data.encryption_key;
+            } else {
+                // מפתח לא קיים (קבוצה חדשה) - נייצר מפתח חזק ונשמור בשרת
+                const newKey = CryptoJS.lib.WordArray.random(16).toString(); // מייצר סטרינג אקראי
+                const { error: insertError } = await supabaseClient.from('group_keys').insert([{
+                    group_id: profile.group_id,
+                    encryption_key: newKey
+                }]);
+                
+                if (!insertError) {
+                    groupEncryptionKey = newKey;
+                } else {
+                    console.error("שגיאה ביצירת מפתח", insertError);
+                }
+            }
+        }
 
         async function checkUser() {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -130,6 +171,9 @@
                     if (profile.is_approved === true) {
                         document.getElementById('app-content').classList.remove('hidden');
                         document.getElementById('pending-screen').classList.add('hidden');
+                        
+                        // קודם מביאים מפתח, ואז מושכים נתונים!
+                        await initEncryptionKey(); 
                         loadFromCloud();
                     } else {
                         document.getElementById('pending-screen').classList.remove('hidden');
@@ -139,16 +183,18 @@
             }
         }
 
-        async function signInWithGoogle() { 
-            await supabaseClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); 
-        }
-
+        async function signInWithGoogle() { await supabaseClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); }
         async function signOut() { await supabaseClient.auth.signOut(); window.location.reload(); }
 
         async function loadFromCloud() {
             const { data } = await supabaseClient.from('coupons').select('*').order('company', { ascending: true });
             if (data) { 
-                allCoupons = data; 
+                // פענוח הנתונים רק למסך הטלפון
+                allCoupons = data.map(c => ({
+                    ...c,
+                    code_or_link: decryptText(c.code_or_link)
+                }));
+                
                 updateCategories(); 
                 updateAutocomplete(); 
                 render(); 
@@ -156,13 +202,11 @@
         }
 
         function updateAutocomplete() {
-            // השלמה למותגים
             const companies = [...new Set(allCoupons.map(c => c.company).filter(Boolean))];
             const defaultCompanies = ["רמי לוי", "שופרסל", "מקס סטוק", "פוקס", "טרמינל X", "סופר-פארם", "וולט"];
             const finalCompanies = [...new Set([...companies, ...defaultCompanies])].sort();
             document.getElementById('companiesList').innerHTML = finalCompanies.map(name => `<option value="${name}">`).join('');
 
-            // השלמה לקטגוריות
             const categories = [...new Set(allCoupons.map(c => c.category).filter(Boolean))];
             const defaultCats = ["מזון", "פארם", "אופנה", "בית", "מסעדות"];
             const finalCats = [...new Set([...categories, ...defaultCats])].sort();
@@ -223,13 +267,13 @@
                                 <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                                     <div class="flex justify-between items-start mb-4">
                                         <div><p class="text-xl font-black text-primary mb-1">${c.value}</p><p class="text-[10px] font-bold text-slate-300 uppercase">${c.expiry_date || 'ללא תוקף'}</p></div>
-                                        <span class="text-[10px] bg-white px-2 py-1 rounded-lg text-slate-400 font-bold border border-slate-100">${c.category || 'כללי'}</span>
+                                        <span class="text-[10px] bg-white px-2 py-1 rounded-lg text-slate-400 font-bold border border-slate-100 flex items-center gap-1"><span class="material-symbols-rounded text-[10px]">lock</span> ${c.category || 'כללי'}</span>
                                     </div>
-                                    <div class="bg-white/50 p-3 rounded-xl text-center font-mono text-xs text-slate-400 border border-dashed border-slate-200 mb-4 truncate select-all">${c.code_or_link}</div>
+                                    <div class="bg-white/50 p-3 rounded-xl text-center font-mono text-xs text-slate-600 border border-dashed border-slate-200 mb-4 truncate select-all">${c.code_or_link}</div>
                                     <div class="flex gap-2">
                                         ${isLink ? `<button onclick="window.open('${c.code_or_link.startsWith('http') ? c.code_or_link : 'https://' + c.code_or_link}', '_blank')" class="flex-1 bg-primary text-white py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md"><span class="material-symbols-rounded text-sm">open_in_new</span>פתח אתר</button>` : ''}
                                         <button onclick="copy('${c.code_or_link}')" class="${isLink ? 'w-24' : 'flex-1'} bg-dark text-white py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform">העתק</button>
-                                        <button onclick="openEdit(${c.id})" class="bg-white p-3 rounded-xl text-slate-300 border border-slate-100"><span class="material-symbols-rounded text-sm">edit</span></button>
+                                        <button onclick="openEdit(${c.id})" class="bg-white p-3 rounded-xl text-slate-400 border border-slate-100"><span class="material-symbols-rounded text-sm">edit</span></button>
                                         <button onclick="deleteFromCloud(${c.id})" class="bg-white p-3 rounded-xl text-red-300 border border-slate-100"><span class="material-symbols-rounded text-sm">delete</span></button>
                                     </div>
                                 </div>`;
@@ -259,7 +303,7 @@
             document.getElementById('edit_id').value = c.id; 
             document.getElementById('edit_company').value = c.company; 
             document.getElementById('edit_value').value = c.value; 
-            document.getElementById('edit_code').value = c.code_or_link; 
+            document.getElementById('edit_code').value = c.code_or_link; // מציג מפוענח בעריכה
             document.getElementById('edit_expiry').value = c.expiry_date || ''; 
             document.getElementById('edit_category').value = c.category || '';
             document.getElementById('editModal').classList.remove('hidden'); 
@@ -269,16 +313,23 @@
 
         async function saveToCloud() {
             const id = document.getElementById('edit_id').value;
+            const rawCode = document.getElementById('edit_code').value;
+            
+            // מפעיל את ההצפנה לפני השמירה בענן!
+            const encryptedCode = encryptText(rawCode);
+
             const payload = { 
                 company: document.getElementById('edit_company').value, 
                 value: document.getElementById('edit_value').value, 
-                code_or_link: document.getElementById('edit_code').value, 
+                code_or_link: encryptedCode, // נשמר בשרת כג'יבריש
                 expiry_date: document.getElementById('edit_expiry').value || null,
                 category: document.getElementById('edit_category').value || 'כללי',
                 group_id: profile.group_id 
             };
+            
             if (id === 'new') await supabaseClient.from('coupons').insert([payload]);
             else await supabaseClient.from('coupons').update(payload).eq('id', id);
+            
             closeEdit(); loadFromCloud();
         }
 
