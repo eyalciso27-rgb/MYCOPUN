@@ -26,9 +26,13 @@
         }
     </script>
     <style>
-        /* הסתרת פס הגלילה בחוצצים אבל השארת אפשרות גלילה */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* סטייל ייעודי למתג (Toggle) */
+        .toggle-checkbox:checked { right: 0; border-color: #00C853; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #00C853; }
+        .toggle-checkbox { right: 0; z-index: 1; border-color: #e2e8f0; transition: all 0.3s; }
+        .toggle-label { width: 3rem; height: 1.5rem; background-color: #cbd5e1; border-radius: 9999px; transition: all 0.3s; }
     </style>
 </head>
 <body class="bg-[#F4F7F6] text-dark font-sans pb-32">
@@ -102,12 +106,23 @@
     <div id="settingsModal" class="hidden fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm">
         <div class="bg-white rounded-t-[2.5rem] sm:rounded-3xl w-full max-w-md p-8 shadow-2xl">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-extrabold">הגדרות התראה (למייל)</h3>
+                <h3 class="text-xl font-extrabold">הגדרות התראות</h3>
                 <button onclick="closeSettings()" class="text-slate-300"><span class="material-symbols-rounded">close</span></button>
             </div>
-            <p class="text-slate-500 mb-6 text-sm">סמן מתי תרצה לקבל תזכורת למייל לפני שקופון פג תוקף:</p>
             
-            <div class="space-y-4 mb-8">
+            <div class="flex items-center justify-between bg-white border border-slate-200 p-5 rounded-2xl mb-6 shadow-sm">
+                <div>
+                    <span class="font-extrabold text-slate-800 block">קבלת התראות למייל</span>
+                    <span class="text-xs text-slate-400">מונע איבוד קופונים שפג תוקפם</span>
+                </div>
+                <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                    <input type="checkbox" name="toggle" id="master_toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" onchange="toggleSubOptions()"/>
+                    <label for="master_toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                </div>
+            </div>
+
+            <div id="sub_options" class="space-y-3 mb-8 transition-opacity duration-300">
+                <p class="text-slate-500 mb-4 text-sm font-bold">מתי תרצה לקבל תזכורת?</p>
                 <label class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl cursor-pointer">
                     <span class="font-bold text-slate-700">14 ימים לפני</span>
                     <input type="checkbox" id="set_14_days" class="w-5 h-5 accent-primary">
@@ -121,6 +136,7 @@
                     <input type="checkbox" id="set_1_day" class="w-5 h-5 accent-primary">
                 </label>
             </div>
+
             <button onclick="saveSettings()" class="w-full bg-dark text-white py-4 rounded-2xl font-bold active:scale-95 transition-transform">שמור הגדרות</button>
         </div>
     </div>
@@ -129,7 +145,7 @@
         let allCoupons = [];
         let profile = null;
         let groupKey = null;
-        let selectedTab = 'הכל'; // החוצץ הנבחר כברירת מחדל
+        let selectedTab = 'הכל';
 
         async function checkUser() {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -195,9 +211,7 @@
                 is_redeemed: false
             }]);
             
-            // המשתמש נשאר בחוצץ שהוא נמצא בו, אלא אם כן זה חוצץ חדש לחלוטין ואז נעביר אותו אליו
             selectedTab = category;
-            
             closeEdit();
             loadFromCloud();
         }
@@ -207,9 +221,7 @@
             loadFromCloud();
         }
 
-        // --- ניהול חוצצים (Tabs) ---
         function renderTabs() {
-            // שולף את כל הקטגוריות הייחודיות, מתעלם מריקים
             const uniqueCategories = [...new Set(allCoupons.map(c => c.category).filter(Boolean))];
             const allTabs = ['הכל', ...uniqueCategories.sort()];
             
@@ -224,21 +236,18 @@
                 </button>
             `).join('');
 
-            // עדכון רשימת ההצעות להשלמה אוטומטית במודאל
             const datalist = document.getElementById('category_suggestions');
             datalist.innerHTML = uniqueCategories.map(cat => `<option value="${cat}">`).join('');
         }
 
         function selectTab(tab) {
             selectedTab = tab;
-            renderTabs(); // מעדכן את צבעי הכפתורים
-            render();     // מסנן את הרשימה
+            renderTabs();
+            render();
         }
 
         function render() {
             const container = document.getElementById('main-container');
-            
-            // סינון הקופונים לפי החוצץ הנבחר
             const filteredCoupons = selectedTab === 'הכל' 
                 ? allCoupons 
                 : allCoupons.filter(c => c.category === selectedTab);
@@ -275,27 +284,44 @@
         }
 
         // --- הגדרות התראות מייל ---
+        function toggleSubOptions() {
+            const masterToggle = document.getElementById('master_toggle').checked;
+            const subOptions = document.getElementById('sub_options');
+            subOptions.style.opacity = masterToggle ? '1' : '0.5';
+            subOptions.style.pointerEvents = masterToggle ? 'auto' : 'none';
+        }
+
         function openSettings() {
-            document.getElementById('set_14_days').checked = profile.remind_14_days;
-            document.getElementById('set_7_days').checked = profile.remind_7_days;
-            document.getElementById('set_1_day').checked = profile.remind_1_day;
+            // קריאת נתונים מהפרופיל (או ברירת מחדל של True)
+            const masterActive = profile.email_alerts_active ?? true;
+            document.getElementById('master_toggle').checked = masterActive;
+            document.getElementById('set_14_days').checked = profile.remind_14_days ?? true;
+            document.getElementById('set_7_days').checked = profile.remind_7_days ?? true;
+            document.getElementById('set_1_day').checked = profile.remind_1_day ?? true;
+            
+            toggleSubOptions();
             document.getElementById('settingsModal').classList.remove('hidden');
         }
 
         function closeSettings() { document.getElementById('settingsModal').classList.add('hidden'); }
 
         async function saveSettings() {
+            const master = document.getElementById('master_toggle').checked;
             const r14 = document.getElementById('set_14_days').checked;
             const r7 = document.getElementById('set_7_days').checked;
             const r1 = document.getElementById('set_1_day').checked;
 
             await supabaseClient.from('profiles').update({
+                email_alerts_active: master,
                 remind_14_days: r14,
                 remind_7_days: r7,
                 remind_1_day: r1
             }).eq('id', profile.id);
 
-            profile.remind_14_days = r14; profile.remind_7_days = r7; profile.remind_1_day = r1;
+            profile.email_alerts_active = master;
+            profile.remind_14_days = r14; 
+            profile.remind_7_days = r7; 
+            profile.remind_1_day = r1;
             
             closeSettings();
             alert("ההגדרות נשמרו בהצלחה!");
