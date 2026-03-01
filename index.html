@@ -1,23 +1,16 @@
 async function checkUser() {
-    try {
-        const { data: { session }, error: authError } = await supabaseClient.auth.getSession();
-        if (authError) throw authError;
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+        console.log("מחובר כ-", session.user.email);
+        
+        // חיפוש הפרופיל לפי ה-ID המדויק של המשתמש המחובר
+        const { data: userProfile, error } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id) // שורה קריטית!
+            .maybeSingle();
 
-        if (session) {
-            console.log("Logged in as:", session.user.email);
-            
-            const { data: userProfile, error: profileError } = await supabaseClient
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-
-            if (profileError) {
-                console.error("Profile not found. Make sure the Trigger is working.");
-                // אם אין פרופיל, ננסה ליצור אחד בסיסי כדי לא לתקוע את המשתמש
-                return;
-            }
-
+        if (userProfile) {
             profile = userProfile;
             document.getElementById('login-screen').classList.add('hidden');
             
@@ -28,9 +21,10 @@ async function checkUser() {
             } else {
                 document.getElementById('pending-screen').classList.remove('hidden');
             }
+        } else {
+            console.error("פרופיל לא נמצא בטבלה");
+            // אם הגעת לכאן, סימן שהטריגר לא יצר לך שורה בטבלה
+            alert("המשתמש נוצר אך הפרופיל חסר. נסה להתנתק ולהתחבר שוב.");
         }
-    } catch (err) {
-        console.error("Critical Auth Error:", err.message);
-        alert("שגיאת התחברות: " + err.message);
     }
 }
