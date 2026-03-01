@@ -50,7 +50,7 @@
             <div id="main-container" class="space-y-3"></div>
         </main>
 
-        <button onclick="openAddModal()" class="fixed bottom-24 left-6 z-40 h-16 w-16 rounded-full bg-primary text-white shadow-xl flex items-center justify-center transition-transform active:scale-90">
+        <button onclick="openAddModal()" class="fixed bottom-10 left-6 z-40 h-16 w-16 rounded-full bg-primary text-white shadow-xl flex items-center justify-center transition-transform active:scale-90">
             <span class="material-symbols-outlined text-[36px]">add</span>
         </button>
     </div>
@@ -63,15 +63,19 @@
             </div>
             <div class="space-y-4">
                 <input type="hidden" id="edit_id">
+                
                 <div class="relative">
-                    <input type="text" id="edit_company" list="companiesList" placeholder="שם המותג" class="w-full p-3 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-primary/20">
+                    <input type="text" id="edit_company" list="companiesList" placeholder="שם המותג (למשל: תן ביס)" class="w-full p-3 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-primary/20" autocomplete="off">
                     <datalist id="companiesList"></datalist>
                 </div>
-                <input type="text" id="edit_title" placeholder="תיאור (לא חובה)" class="w-full p-3 bg-slate-100 rounded-xl outline-none">
+
+                <input type="text" id="edit_title" placeholder="תיאור (למשל: קופון מיובא)" class="w-full p-3 bg-slate-100 rounded-xl outline-none">
                 <input type="text" id="edit_value" placeholder="שווי (₪)" class="w-full p-3 bg-slate-100 rounded-xl outline-none">
                 <input type="text" id="edit_code" placeholder="קוד או קישור" class="w-full p-3 bg-slate-100 rounded-xl outline-none">
+                
                 <div class="flex gap-2 pt-2">
-                    <button onclick="saveToCloud()" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">שמור בענן</button>
+                    <button id="saveBtn" onclick="saveToCloud()" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">שמור בענן</button>
+                    <button onclick="closeEdit()" class="flex-1 bg-slate-100 py-3 rounded-xl font-bold text-slate-500">ביטול</button>
                 </div>
             </div>
         </div>
@@ -81,7 +85,7 @@
         let allCoupons = [];
         let user = null;
 
-        // 1. בדיקת התחברות
+        // 1. ניהול משתמש והתחברות
         async function checkUser() {
             const { data } = await supabaseClient.auth.getSession();
             if (data.session) {
@@ -95,7 +99,10 @@
         async function signInWithGoogle() {
             const { error } = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
-                options: { redirectTo: window.location.origin }
+                options: { 
+                    // מזהה אוטומטית אם לחזור ל-localhost או ל-Vercel
+                    redirectTo: window.location.origin 
+                }
             });
             if (error) alert("שגיאה בהתחברות: " + error.message);
         }
@@ -105,7 +112,7 @@
             window.location.reload();
         }
 
-        // 2. ניהול נתונים מול Supabase
+        // 2. טעינה ורינדור נתונים
         async function loadFromCloud() {
             const { data, error } = await supabaseClient
                 .from('coupons')
@@ -116,12 +123,14 @@
                 allCoupons = data;
                 updateAutocomplete();
                 render();
+            } else if (error) {
+                console.error("Error loading coupons:", error.message);
             }
         }
 
         function updateAutocomplete() {
-            const list = [...new Set(allCoupons.map(c => c.company))];
-            document.getElementById('companiesList').innerHTML = list.map(name => `<option value="${name}">`).join('');
+            const uniqueCompanies = [...new Set(allCoupons.map(c => c.company))].sort();
+            document.getElementById('companiesList').innerHTML = uniqueCompanies.map(name => `<option value="${name}">`).join('');
         }
 
         function render() {
@@ -132,7 +141,7 @@
 
             allCoupons.filter(c => 
                 (c.company || "").toLowerCase().includes(query) || 
-                (c.code_or_link || "").includes(query)
+                (c.code_or_link || "").toLowerCase().includes(query)
             ).forEach(c => {
                 const name = c.company || "אחר";
                 if (!grouped[name]) grouped[name] = [];
@@ -148,21 +157,24 @@
                 container.innerHTML += `
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-3">
                         <div onclick="toggleGroup(${idx})" class="p-4 flex justify-between items-center cursor-pointer active:bg-slate-50">
-                            <span class="font-bold text-slate-900">${name} (${group.length})</span>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs border border-primary/10">${name.charAt(0)}</div>
+                                <div><h3 class="font-bold text-slate-900">${name}</h3><p class="text-[10px] text-slate-400 font-bold uppercase">${group.length} קופונים</p></div>
+                            </div>
                             <span class="material-symbols-outlined text-slate-300 transition-transform" id="icon-${idx}">expand_more</span>
                         </div>
                         <div id="group-${idx}" class="hidden p-4 bg-slate-50/50 border-t space-y-3">
                             ${group.map(c => `
-                                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                    <div class="flex justify-between font-bold mb-2 text-sm">
-                                        <span class="text-slate-500">${c.title || 'קופון'}</span>
+                                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative">
+                                    <div class="flex justify-between font-bold mb-2">
+                                        <span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 uppercase">${c.title || 'כללי'}</span>
                                         <span class="text-primary font-black">${c.value}</span>
                                     </div>
                                     <div class="bg-slate-50 p-2 rounded text-center font-mono text-xs break-all mb-3 text-slate-600 border border-dashed">${c.code_or_link}</div>
                                     <div class="flex gap-2">
-                                        <button onclick="copy('${c.code_or_link}')" class="flex-1 bg-slate-800 text-white py-2 rounded-lg text-xs font-bold">העתק</button>
-                                        <button onclick="openEdit(${c.id})" class="bg-slate-100 p-2 rounded-lg text-slate-600"><span class="material-symbols-outlined text-sm">edit</span></button>
-                                        <button onclick="deleteFromCloud(${c.id})" class="bg-red-50 p-2 rounded-lg text-red-500"><span class="material-symbols-outlined text-sm">delete</span></button>
+                                        <button onclick="copy('${c.code_or_link}')" class="flex-1 bg-slate-800 text-white py-2 rounded-lg text-xs font-bold active:bg-slate-700">העתק</button>
+                                        <button onclick="openEdit(${c.id})" class="bg-slate-100 p-2 rounded-lg text-slate-600 active:bg-slate-200"><span class="material-symbols-outlined text-sm">edit</span></button>
+                                        <button onclick="deleteFromCloud(${c.id})" class="bg-red-50 p-2 rounded-lg text-red-500 active:bg-red-100"><span class="material-symbols-outlined text-sm">delete</span></button>
                                     </div>
                                 </div>
                             `).join('')}
@@ -178,15 +190,20 @@
             icon.style.transform = el.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
         }
 
-        // 3. הוספה/עריכה לענן
+        // 3. הוספה/עריכה
         function openAddModal() {
+            document.getElementById('modalTitle').innerText = "הוספת קופון חדש";
             document.getElementById('edit_id').value = 'new';
             document.getElementById('edit_company').value = '';
+            document.getElementById('edit_title').value = '';
+            document.getElementById('edit_value').value = '';
+            document.getElementById('edit_code').value = '';
             document.getElementById('editModal').classList.remove('hidden');
         }
 
         function openEdit(id) {
             const c = allCoupons.find(x => x.id === id);
+            document.getElementById('modalTitle').innerText = "עריכת קופון";
             document.getElementById('edit_id').value = c.id;
             document.getElementById('edit_company').value = c.company;
             document.getElementById('edit_title').value = c.title || '';
@@ -206,23 +223,34 @@
                 code_or_link: document.getElementById('edit_code').value
             };
 
+            if(!payload.company || !payload.value) {
+                alert("חובה למלא לפחות מותג ושווי");
+                return;
+            }
+
             if (id === 'new') {
-                await supabaseClient.from('coupons').insert([payload]);
+                const { error } = await supabaseClient.from('coupons').insert([payload]);
+                if (error) alert("שגיאה בשמירה: " + error.message);
             } else {
-                await supabaseClient.from('coupons').update(payload).eq('id', id);
+                const { error } = await supabaseClient.from('coupons').update(payload).eq('id', id);
+                if (error) alert("שגיאה בעדכון: " + error.message);
             }
             closeEdit();
             loadFromCloud();
         }
 
         async function deleteFromCloud(id) {
-            if (confirm("למחוק לצמיתות?")) {
-                await supabaseClient.from('coupons').delete().eq('id', id);
+            if (confirm("האם למחוק את הקופון לצמיתות?")) {
+                const { error } = await supabaseClient.from('coupons').delete().eq('id', id);
+                if (error) alert("שגיאה במחיקה: " + error.message);
                 loadFromCloud();
             }
         }
 
-        function copy(t) { navigator.clipboard.writeText(t); alert('הועתק!'); }
+        function copy(t) { 
+            navigator.clipboard.writeText(t); 
+            alert('הקוד הועתק לארנק!'); 
+        }
 
         window.onload = checkUser;
     </script>
