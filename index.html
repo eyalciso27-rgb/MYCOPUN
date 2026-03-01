@@ -1,252 +1,36 @@
-<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>הארנק המשותף</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-    <script>
-        const supabaseUrl = 'https://iaihwnbbebjsirlhezwb.supabase.co';
-        const supabaseKey = 'sb_publishable_JOxGwNl2y2S-wUL2Xp3LLA_Xn9UxEHJ';
-        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+async function checkUser() {
+    try {
+        const { data: { session }, error: authError } = await supabaseClient.auth.getSession();
+        if (authError) throw authError;
 
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: { primary: "#00C853", dark: "#1a1a1a", pending: "#f59e0b" },
-                    fontFamily: { sans: ['Assistant', 'sans-serif'] }
-                }
+        if (session) {
+            console.log("Logged in as:", session.user.email);
+            
+            const { data: userProfile, error: profileError } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+
+            if (profileError) {
+                console.error("Profile not found. Make sure the Trigger is working.");
+                // אם אין פרופיל, ננסה ליצור אחד בסיסי כדי לא לתקוע את המשתמש
+                return;
+            }
+
+            profile = userProfile;
+            document.getElementById('login-screen').classList.add('hidden');
+            
+            if (profile.is_approved) {
+                document.getElementById('app-content').classList.remove('hidden');
+                document.getElementById('pending-screen').classList.add('hidden');
+                loadFromCloud();
+            } else {
+                document.getElementById('pending-screen').classList.remove('hidden');
             }
         }
-    </script>
-    <style>
-        body { background-color: #F4F7F6; -webkit-tap-highlight-color: transparent; }
-        .modern-card { transition: all 0.2s ease; border: 1px solid #edf2f7; }
-        .amount-badge { background: #e8f5e9; color: #2e7d32; }
-        .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .category-pill { transition: all 0.2s; white-space: nowrap; }
-        .category-pill.active { background-color: #00C853; color: white; border-color: #00C853; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-    </style>
-</head>
-<body class="text-dark font-sans pb-32">
-
-    <div id="login-screen" class="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center p-8 text-center">
-        <div class="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mb-8"><span class="material-symbols-rounded text-5xl text-primary">wallet</span></div>
-        <h1 class="text-3xl font-extrabold mb-2">הארנק שלי</h1>
-        <button onclick="signInWithGoogle()" class="w-full max-w-xs flex items-center justify-center gap-3 bg-white border border-slate-200 p-4 rounded-2xl font-bold shadow-sm active:scale-95 transition-all"> התחבר עם Google </button>
-    </div>
-
-    <div id="pending-screen" class="hidden fixed inset-0 z-[150] bg-white flex flex-col items-center justify-center p-8 text-center">
-        <div class="w-20 h-20 bg-pending/10 rounded-full flex items-center justify-center mb-6 animate-pulse"><span class="material-symbols-rounded text-5xl text-pending">lock_person</span></div>
-        <h2 class="text-2xl font-bold mb-2">ממתין לאישור</h2>
-        <p class="text-slate-500">החשבון נוצר. אייל יאשר אותך בקרוב.</p>
-        <button onclick="signOut()" class="mt-8 text-slate-400 underline font-bold text-sm">התנתק</button>
-    </div>
-
-    <div id="app-content" class="hidden">
-        <header class="glass-header sticky top-0 z-40 px-6 py-5 flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-extrabold text-dark tracking-tight leading-none mb-1">הארנק שלי</h1>
-                <p id="coupon-count" class="text-[10px] text-slate-400 font-bold uppercase tracking-widest"></p>
-            </div>
-            <div class="flex items-center gap-4 text-left">
-                <div>
-                    <p class="text-[10px] text-slate-400 font-bold leading-none mb-1">סה"כ שווי</p>
-                    <h2 id="total-value" class="text-xl font-black text-primary leading-none">₪0</h2>
-                </div>
-                <button onclick="signOut()" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300"><span class="material-symbols-rounded text-xl">logout</span></button>
-            </div>
-        </header>
-
-        <main class="p-6 space-y-4">
-            <div class="bg-white rounded-2xl shadow-sm flex items-center gap-3 px-5 py-1 border border-slate-100">
-                <span class="material-symbols-rounded text-slate-300">search</span>
-                <input type="text" id="searchInput" onkeyup="render()" placeholder="חפש מותג..." class="w-full py-4 outline-none bg-transparent font-medium">
-            </div>
-
-            <div id="categories-bar" class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                </div>
-
-            <div id="main-container" class="space-y-4 pt-2"></div>
-        </main>
-
-        <button onclick="openAddModal()" class="fixed bottom-8 left-6 right-6 z-40 bg-primary text-white py-4 rounded-2xl shadow-xl flex items-center justify-center gap-2 font-bold active:scale-95 transition-transform">
-            <span class="material-symbols-rounded">add</span> הוספת קופון חדש
-        </button>
-    </div>
-
-    <div id="editModal" class="hidden fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm">
-        <div class="bg-white rounded-t-[2.5rem] sm:rounded-3xl w-full max-w-md p-8 shadow-2xl">
-            <div class="flex justify-between items-center mb-8"><h3 id="modalTitle" class="text-xl font-extrabold">קופון</h3><button onclick="closeEdit()" class="text-slate-300"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="space-y-4">
-                <input type="hidden" id="edit_id">
-                <input type="text" id="edit_company" list="companiesList" placeholder="שם המותג" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold">
-                <datalist id="companiesList"></datalist>
-                <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="edit_value" placeholder="שווי" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold">
-                    <input type="date" id="edit_expiry" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold text-right">
-                </div>
-                <input type="text" id="edit_code" placeholder="קוד קופון / לינק" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold">
-                <input type="text" id="edit_category" placeholder="קטגוריה (למשל: מזון)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold">
-                <button onclick="saveToCloud()" class="w-full bg-primary text-white py-5 rounded-2xl font-bold text-lg mt-4 shadow-lg">שמור בארנק</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let allCoupons = [];
-        let profile = null;
-        let selectedCategory = 'הכל';
-
-        async function checkUser() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                const { data: userProfile } = await supabaseClient.from('profiles').select('*').single();
-                if (userProfile) {
-                    profile = userProfile;
-                    document.getElementById('login-screen').classList.add('hidden');
-                    if (profile.is_approved) {
-                        document.getElementById('app-content').classList.remove('hidden');
-                        loadFromCloud();
-                    } else { document.getElementById('pending-screen').classList.remove('hidden'); }
-                }
-            }
-        }
-
-        async function signInWithGoogle() { await supabaseClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); }
-        async function signOut() { await supabaseClient.auth.signOut(); window.location.reload(); }
-
-        async function loadFromCloud() {
-            const { data } = await supabaseClient.from('coupons').select('*').order('company', { ascending: true });
-            if (data) { allCoupons = data; updateCategories(); render(); }
-        }
-
-        function updateCategories() {
-            const cats = ['הכל', ...new Set(allCoupons.map(c => c.category || 'כללי'))];
-            const bar = document.getElementById('categories-bar');
-            bar.innerHTML = cats.map(c => `
-                <button onclick="filterCat('${c}')" class="category-pill px-5 py-2 rounded-full border border-slate-200 bg-white text-xs font-bold ${selectedCategory === c ? 'active' : 'text-slate-400'}">
-                    ${c}
-                </button>
-            `).join('');
-        }
-
-        function filterCat(cat) {
-            selectedCategory = cat;
-            updateCategories();
-            render();
-        }
-
-        function render() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const container = document.getElementById('main-container');
-            let totalWallet = 0; const grouped = {};
-
-            allCoupons.forEach(c => {
-                const matchSearch = (c.company || "").toLowerCase().includes(query);
-                const matchCat = selectedCategory === 'הכל' || (c.category || 'כללי') === selectedCategory;
-
-                if (matchSearch && matchCat) {
-                    const name = c.company || "אחר";
-                    if (!grouped[name]) grouped[name] = { list: [], sum: 0 };
-                    grouped[name].list.push(c);
-                    const val = parseFloat(String(c.value).replace(/[^0-9.]/g, '')) || 0;
-                    grouped[name].sum += val; totalWallet += val;
-                }
-            });
-
-            document.getElementById('total-value').innerText = `₪${totalWallet.toLocaleString()}`;
-            document.getElementById('coupon-count').innerText = `${allCoupons.length} קופונים`;
-            container.innerHTML = '';
-
-            Object.keys(grouped).forEach((name, idx) => {
-                const g = grouped[name];
-                container.innerHTML += `
-                    <div class="modern-card bg-white rounded-3xl overflow-hidden shadow-sm mb-4">
-                        <div onclick="toggleGroup(${idx})" class="p-5 flex justify-between items-center cursor-pointer active:bg-slate-50">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 font-bold border border-slate-100">${name.charAt(0)}</div>
-                                <h3 class="font-extrabold text-slate-800">${name}</h3>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <span class="amount-badge px-3 py-1 rounded-full text-[10px] font-black tracking-tighter">₪${g.sum.toLocaleString()}</span>
-                                <span class="material-symbols-rounded text-slate-200" id="icon-${idx}">expand_more</span>
-                            </div>
-                        </div>
-                        <div id="group-${idx}" class="hidden px-5 pb-5 space-y-3">
-                            ${g.list.map(c => {
-                                const isLink = c.code_or_link && c.code_or_link.includes('http');
-                                return `
-                                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                                    <div class="flex justify-between items-start mb-4">
-                                        <div><p class="text-xl font-black text-primary mb-1">${c.value}</p><p class="text-[10px] font-bold text-slate-300">${c.expiry_date || 'ללא תוקף'}</p></div>
-                                        <span class="text-[10px] bg-white px-2 py-1 rounded-lg text-slate-400 font-bold border border-slate-100">${c.category || 'כללי'}</span>
-                                    </div>
-                                    <div class="bg-white/50 p-3 rounded-xl text-center font-mono text-xs text-slate-400 border border-dashed border-slate-200 mb-4 truncate select-all">${c.code_or_link}</div>
-                                    <div class="flex gap-2">
-                                        ${isLink ? `<button onclick="window.open('${c.code_or_link}', '_blank')" class="flex-1 bg-primary text-white py-3 rounded-xl text-xs font-bold shadow-md active:scale-95 transition-transform flex items-center justify-center gap-2"><span class="material-symbols-rounded text-sm">open_in_new</span>פתח קישור</button>` : ''}
-                                        <button onclick="copy('${c.code_or_link}')" class="${isLink ? 'w-20' : 'flex-1'} bg-dark text-white py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform">העתק</button>
-                                        <button onclick="openEdit(${c.id})" class="bg-white p-3 rounded-xl text-slate-300 border border-slate-100"><span class="material-symbols-rounded text-sm">edit</span></button>
-                                        <button onclick="deleteFromCloud(${c.id})" class="bg-white p-3 rounded-xl text-red-300 border border-slate-100"><span class="material-symbols-rounded text-sm">delete</span></button>
-                                    </div>
-                                </div>`;
-                            }).join('')}
-                        </div>
-                    </div>`;
-            });
-        }
-
-        function toggleGroup(idx) { 
-            const el = document.getElementById(`group-${idx}`); 
-            const icon = document.getElementById(`icon-${idx}`); 
-            el.classList.toggle('hidden'); 
-            icon.style.transform = el.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)'; 
-        }
-
-        function openAddModal() { 
-            document.getElementById('modalTitle').innerText = "קופון חדש"; 
-            document.getElementById('edit_id').value = 'new'; 
-            ['edit_company', 'edit_value', 'edit_code', 'edit_expiry', 'edit_category'].forEach(id => document.getElementById(id).value = ''); 
-            document.getElementById('editModal').classList.remove('hidden'); 
-        }
-
-        function openEdit(id) { 
-            const c = allCoupons.find(x => x.id === id); 
-            document.getElementById('modalTitle').innerText = "עריכה"; 
-            document.getElementById('edit_id').value = c.id; 
-            document.getElementById('edit_company').value = c.company; 
-            document.getElementById('edit_value').value = c.value; 
-            document.getElementById('edit_code').value = c.code_or_link; 
-            document.getElementById('edit_expiry').value = c.expiry_date || ''; 
-            document.getElementById('edit_category').value = c.category || '';
-            document.getElementById('editModal').classList.remove('hidden'); 
-        }
-
-        function closeEdit() { document.getElementById('editModal').classList.add('hidden'); }
-
-        async function saveToCloud() {
-            const id = document.getElementById('edit_id').value;
-            const payload = { 
-                company: document.getElementById('edit_company').value, 
-                value: document.getElementById('edit_value').value, 
-                code_or_link: document.getElementById('edit_code').value, 
-                expiry_date: document.getElementById('edit_expiry').value,
-                category: document.getElementById('edit_category').value,
-                group_id: profile.group_id 
-            };
-            if (id === 'new') await supabaseClient.from('coupons').insert([payload]);
-            else await supabaseClient.from('coupons').update(payload).eq('id', id);
-            closeEdit(); loadFromCloud();
-        }
-
-        async function deleteFromCloud(id) { if (confirm("להסיר מהארנק?")) { await supabaseClient.from('coupons').delete().eq('id', id); loadFromCloud(); } }
-        function copy(t) { navigator.clipboard.writeText(t); alert("הקוד הועתק!"); }
-
-        window.onload = checkUser;
-    </script>
-</body>
-</html>
+    } catch (err) {
+        console.error("Critical Auth Error:", err.message);
+        alert("שגיאת התחברות: " + err.message);
+    }
+}
