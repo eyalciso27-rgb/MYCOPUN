@@ -28,7 +28,6 @@
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        /* סטייל ייעודי למתג (Toggle) */
         .toggle-checkbox:checked { right: 0; border-color: #00C853; }
         .toggle-checkbox:checked + .toggle-label { background-color: #00C853; }
         .toggle-checkbox { right: 0; z-index: 1; border-color: #e2e8f0; transition: all 0.3s; }
@@ -71,13 +70,10 @@
                     </button>
                 </div>
             </div>
-            
-            <div id="tabs-container" class="px-6 pb-4 flex gap-2 overflow-x-auto no-scrollbar scroll-smooth">
-                </div>
+            <div id="tabs-container" class="px-6 pb-4 flex gap-2 overflow-x-auto no-scrollbar scroll-smooth"></div>
         </header>
 
-        <main class="p-6 space-y-4" id="main-container">
-            </main>
+        <main class="p-6 space-y-4" id="main-container"></main>
 
         <button onclick="openAddModal()" class="fixed bottom-8 left-6 right-6 z-40 bg-primary text-white py-4 rounded-2xl shadow-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
             <span class="material-symbols-rounded">add</span> הוספת קופון חדש
@@ -92,10 +88,8 @@
             </div>
             <div class="space-y-4">
                 <input type="text" id="edit_company" placeholder="שם המותג (למשל: רמי לוי)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold">
-                
                 <input type="text" id="edit_category" list="category_suggestions" placeholder="שם החוצץ (למשל: מזון, ביגוד)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold">
                 <datalist id="category_suggestions"></datalist>
-
                 <input type="date" id="edit_expiry" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold text-right" placeholder="תוקף">
                 <input type="text" id="edit_code" placeholder="קוד קופון (יוצפן מיד בענן)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none font-semibold border border-transparent focus:border-primary/20">
                 <button onclick="saveToCloud()" class="w-full bg-primary text-white py-5 rounded-2xl font-bold text-lg mt-4 shadow-lg active:scale-95 transition-transform">הצפן ושמור בכספת</button>
@@ -109,7 +103,6 @@
                 <h3 class="text-xl font-extrabold">הגדרות התראות</h3>
                 <button onclick="closeSettings()" class="text-slate-300"><span class="material-symbols-rounded">close</span></button>
             </div>
-            
             <div class="flex items-center justify-between bg-white border border-slate-200 p-5 rounded-2xl mb-6 shadow-sm">
                 <div>
                     <span class="font-extrabold text-slate-800 block">קבלת התראות למייל</span>
@@ -120,7 +113,6 @@
                     <label for="master_toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
                 </div>
             </div>
-
             <div id="sub_options" class="space-y-3 mb-8 transition-opacity duration-300">
                 <p class="text-slate-500 mb-4 text-sm font-bold">מתי תרצה לקבל תזכורת?</p>
                 <label class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl cursor-pointer">
@@ -136,7 +128,6 @@
                     <input type="checkbox" id="set_1_day" class="w-5 h-5 accent-primary">
                 </label>
             </div>
-
             <button onclick="saveSettings()" class="w-full bg-dark text-white py-4 rounded-2xl font-bold active:scale-95 transition-transform">שמור הגדרות</button>
         </div>
     </div>
@@ -178,16 +169,33 @@
             }
         }
 
-        function encrypt(text) { return CryptoJS.AES.encrypt(text, groupKey).toString(); }
+        function encrypt(text) { 
+            if(!text) return "";
+            return CryptoJS.AES.encrypt(text, groupKey).toString(); 
+        }
+        
+        // גרסה חכמה יותר של פענוח: לא תהרוס קופונים ישנים שאינם מוצפנים
         function decrypt(ciphertext) {
+            if(!ciphertext) return "";
             try {
                 const bytes = CryptoJS.AES.decrypt(ciphertext, groupKey);
-                return bytes.toString(CryptoJS.enc.Utf8) || "שגיאת פענוח";
-            } catch (e) { return "קוד מוצפן"; }
+                const originalText = bytes.toString(CryptoJS.enc.Utf8);
+                if (originalText) return originalText;
+                return ciphertext; // אם זה טקסט ישן שלא מוצפן - תחזיר אותו כמו שהוא
+            } catch (e) { 
+                return ciphertext; // במקרה של שגיאה, מציג את הטקסט המקורי
+            }
         }
 
         async function loadFromCloud() {
-            const { data } = await supabaseClient.from('coupons').select('*').order('is_redeemed', { ascending: true }).order('expiry_date', { ascending: true });
+            // תוספת שגיאות כדי שנדע למה זה נכשל
+            const { data, error } = await supabaseClient.from('coupons').select('*').order('is_redeemed', { ascending: true }).order('expiry_date', { ascending: true });
+            
+            if (error) {
+                alert("שגיאה במשיכת הנתונים (האם הוספת את עמודת is_redeemed ב-Supabase?)\n" + error.message);
+                return;
+            }
+
             if (data) {
                 allCoupons = data.map(c => ({ ...c, code_or_link: decrypt(c.code_or_link) }));
                 renderTabs();
@@ -261,9 +269,7 @@
                 const isRedeemed = c.is_redeemed;
                 return `
                 <div class="${isRedeemed ? 'bg-slate-50 opacity-60' : 'bg-white'} p-6 rounded-3xl shadow-sm border ${isRedeemed ? 'border-transparent' : 'border-slate-100'} mb-4 transition-all relative overflow-hidden">
-                    
                     ${isRedeemed ? '<div class="absolute top-4 left-4 bg-slate-200 text-slate-500 text-[10px] px-2 py-1 rounded-md font-bold uppercase">מומש</div>' : ''}
-
                     <div class="flex justify-between items-start mb-4">
                         <div>
                             <p class="font-bold text-slate-400 text-xs uppercase tracking-wider ${isRedeemed ? 'line-through' : ''}">${c.company}</p>
@@ -273,17 +279,14 @@
                             <span class="material-symbols-rounded">${isRedeemed ? 'undo' : 'check'}</span>
                         </button>
                     </div>
-                    
                     <div class="bg-slate-50 p-4 rounded-xl text-center font-mono font-bold text-xl text-slate-700 break-all select-all ${isRedeemed ? 'line-through text-slate-400' : ''}">
                         ${c.code_or_link}
                     </div>
-                    
                     ${c.category && c.category !== 'כללי' ? `<div class="mt-3 text-[10px] font-bold text-slate-300 bg-white border border-slate-100 px-2 py-1 rounded-lg inline-block">${c.category}</div>` : ''}
                 </div>
             `}).join('');
         }
 
-        // --- הגדרות התראות מייל ---
         function toggleSubOptions() {
             const masterToggle = document.getElementById('master_toggle').checked;
             const subOptions = document.getElementById('sub_options');
@@ -292,7 +295,6 @@
         }
 
         function openSettings() {
-            // קריאת נתונים מהפרופיל (או ברירת מחדל של True)
             const masterActive = profile.email_alerts_active ?? true;
             document.getElementById('master_toggle').checked = masterActive;
             document.getElementById('set_14_days').checked = profile.remind_14_days ?? true;
