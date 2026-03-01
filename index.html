@@ -6,8 +6,8 @@
     <title>הארנק המשותף</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;800&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:wght@300;400;500;600&display=swap" rel="stylesheet"/>
     <script>
         const supabaseUrl = 'https://iaihwnbbebjsirlhezwb.supabase.co';
         const supabaseKey = 'sb_publishable_JOxGwNl2y2S-wUL2Xp3LLA_Xn9UxEHJ';
@@ -16,106 +16,91 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: { primary: "#2563eb", accent: "#f59e0b", danger: "#ef4444" },
+                    colors: { primary: "#00C853", secondary: "#f8f9fa", dark: "#1a1a1a" },
                     fontFamily: { sans: ['Assistant', 'sans-serif'] }
                 }
             }
         }
     </script>
     <style>
-        .coupon-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .bg-gradient-main { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        body { background-color: #F4F7F6; }
+        .modern-card { transition: transform 0.2s ease, box-shadow 0.2s ease; border: 1px solid #edf2f7; }
+        .modern-card:active { transform: scale(0.98); }
+        .glass-header { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .amount-badge { background: #e8f5e9; color: #2e7d32; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 pb-32 min-h-screen">
+<body class="text-dark font-sans pb-32">
 
     <div id="login-screen" class="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center p-8 text-center">
-        <div class="w-24 h-24 bg-primary/10 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-inner">
-            <span class="material-symbols-outlined text-6xl text-primary">account_balance_wallet</span>
+        <div class="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mb-8">
+            <span class="material-symbols-rounded text-5xl text-primary">wallet</span>
         </div>
-        <h1 class="text-4xl font-extrabold mb-3 tracking-tight">הארנק המשותף</h1>
-        <p class="text-slate-500 mb-12 text-lg">אייל & רחל • כל הקופונים במקום אחד</p>
-        <button onclick="signInWithGoogle()" class="w-full max-w-sm flex items-center justify-center gap-4 bg-white border-2 border-slate-100 p-5 rounded-2xl font-bold shadow-xl hover:bg-slate-50 active:scale-95 transition-all">
-            <img src="https://www.google.com/favicon.ico" class="w-6 h-6">
-            התחברות מאובטחת עם Google
+        <h1 class="text-3xl font-extrabold mb-2">ברוכים השבים</h1>
+        <p class="text-slate-400 mb-10">הארנק המשותף של אייל ורחל</p>
+        <button onclick="signInWithGoogle()" class="w-full max-w-xs flex items-center justify-center gap-3 bg-white border border-slate-200 p-4 rounded-2xl font-bold shadow-sm active:scale-95 transition-all">
+            <img src="https://www.google.com/favicon.ico" class="w-5 h-5">
+            התחבר עם Google
         </button>
     </div>
 
     <div id="app-content" class="hidden">
-        <header class="bg-gradient-main pt-10 pb-20 px-6 rounded-b-[3rem] shadow-2xl relative">
-            <div class="flex justify-between items-center mb-8">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-white font-bold">
-                        <span class="material-symbols-outlined">group</span>
-                    </div>
-                    <h1 class="text-xl font-bold text-white">שלום, אייל ורחל</h1>
+        <header class="glass-header sticky top-0 z-40 px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-extrabold text-dark tracking-tight">הארנק שלי</h1>
+                    <p id="coupon-count" class="text-xs text-slate-400 font-bold uppercase"></p>
                 </div>
-                <button onclick="signOut()" class="bg-white/10 hover:bg-white/20 p-2 rounded-xl text-white transition-colors">
-                    <span class="material-symbols-outlined">logout</span>
-                </button>
-            </div>
-            
-            <div class="glass p-6 rounded-3xl shadow-lg border border-white/20">
-                <p class="text-slate-400 text-sm font-bold mb-1">שווי כולל בארנק</p>
-                <div class="flex items-baseline gap-2">
-                    <h2 id="total-value" class="text-4xl font-black text-primary">₪0</h2>
-                    <span id="coupon-count" class="text-slate-400 font-bold text-sm"></span>
+                <div class="flex items-center gap-3">
+                    <div class="text-left">
+                        <p class="text-[10px] text-slate-400 font-bold leading-none mb-1">סה"כ שווי</p>
+                        <h2 id="total-value" class="text-xl font-black text-primary leading-none">₪0</h2>
+                    </div>
+                    <button onclick="signOut()" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                        <span class="material-symbols-rounded text-xl">logout</span>
+                    </button>
                 </div>
             </div>
         </header>
 
-        <main class="px-5 -mt-10 space-y-6 relative z-10">
-            <div class="glass rounded-2xl shadow-md flex items-center gap-3 px-4 py-1 border border-white">
-                <span class="material-symbols-outlined text-slate-400">search</span>
-                <input type="text" id="searchInput" onkeyup="render()" placeholder="חפש מותג, מוצר או קוד..." class="w-full py-4 outline-none bg-transparent font-medium">
+        <main class="p-6 space-y-6">
+            <div class="bg-white rounded-2xl shadow-sm flex items-center gap-3 px-5 py-1 border border-slate-100">
+                <span class="material-symbols-rounded text-slate-300">search</span>
+                <input type="text" id="searchInput" onkeyup="render()" placeholder="חפש מותג או קוד..." class="w-full py-4 outline-none bg-transparent font-medium text-slate-600">
             </div>
 
-            <div id="alerts-container" class="hidden space-y-3">
-                <h3 class="text-danger font-extrabold flex items-center gap-2 px-1">
-                    <span class="material-symbols-outlined">notification_important</span>
-                    לשים לב! פגים בקרוב
-                </h3>
-                <div id="expiry-alerts" class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide"></div>
+            <div id="alerts-container" class="hidden">
+                <div id="expiry-alerts" class="flex gap-3 overflow-x-auto pb-2 no-scrollbar"></div>
             </div>
 
-            <div id="main-container" class="space-y-4 pb-20"></div>
+            <div id="main-container" class="space-y-4"></div>
         </main>
 
-        <button onclick="openAddModal()" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 bg-primary text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-3 font-bold active:scale-90 transition-transform">
-            <span class="material-symbols-outlined">add_circle</span>
-            הוספת קופון
+        <button onclick="openAddModal()" class="fixed bottom-8 left-6 right-6 z-40 bg-primary text-white py-4 rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center gap-2 font-bold active:scale-95 transition-transform">
+            <span class="material-symbols-rounded">add</span>
+            הוספת קופון חדש
         </button>
     </div>
 
-    <div id="editModal" class="hidden fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/80 backdrop-blur-sm">
-        <div class="bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-md p-8 shadow-2xl">
+    <div id="editModal" class="hidden fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm">
+        <div class="bg-white rounded-t-[2.5rem] sm:rounded-3xl w-full max-w-md p-8 shadow-2xl">
             <div class="flex justify-between items-center mb-8">
-                <h3 id="modalTitle" class="text-2xl font-black text-slate-800 tracking-tight">הוספת קופון</h3>
-                <button onclick="closeEdit()" class="bg-slate-100 p-2 rounded-full text-slate-400"><span class="material-symbols-outlined">close</span></button>
+                <h3 id="modalTitle" class="text-xl font-extrabold">הוספת קופון</h3>
+                <button onclick="closeEdit()" class="text-slate-300"><span class="material-symbols-rounded">close</span></button>
             </div>
-            <div class="space-y-5">
+            <div class="space-y-4">
                 <input type="hidden" id="edit_id">
-                <div>
-                    <label class="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest text-right">שם המותג</label>
-                    <input type="text" id="edit_company" list="companiesList" placeholder="למשל: תן ביס" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary/30 transition-all">
-                    <datalist id="companiesList"></datalist>
-                </div>
+                <input type="text" id="edit_company" list="companiesList" placeholder="שם המותג (למשל: תן ביס)" class="w-full p-4 bg-secondary rounded-2xl outline-none border border-transparent focus:border-primary/20 transition-all font-semibold">
+                <datalist id="companiesList"></datalist>
+                
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest text-right">שווי (₪)</label>
-                        <input type="text" id="edit_value" placeholder="100" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest text-right">תוקף</label>
-                        <input type="date" id="edit_expiry" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none text-right">
-                    </div>
+                    <input type="text" id="edit_value" placeholder="שווי (₪)" class="w-full p-4 bg-secondary rounded-2xl outline-none font-semibold">
+                    <input type="date" id="edit_expiry" class="w-full p-4 bg-secondary rounded-2xl outline-none font-semibold text-right">
                 </div>
-                <div>
-                    <label class="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest text-right">קוד או קישור</label>
-                    <input type="text" id="edit_code" placeholder="הדבק כאן..." class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none">
-                </div>
-                <button onclick="saveToCloud()" class="w-full bg-primary text-white py-5 rounded-2xl font-black text-lg shadow-lg shadow-primary/30 mt-4 active:scale-95 transition-transform">שמור בארנק המשותף</button>
+                
+                <input type="text" id="edit_code" placeholder="קוד קופון או לינק" class="w-full p-4 bg-secondary rounded-2xl outline-none font-semibold">
+                
+                <button onclick="saveToCloud()" class="w-full bg-primary text-white py-5 rounded-2xl font-bold text-lg mt-4 shadow-lg shadow-primary/10">שמור בארנק</button>
             </div>
         </div>
     </div>
@@ -135,10 +120,7 @@
         }
 
         async function signInWithGoogle() {
-            await supabaseClient.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: window.location.origin }
-            });
+            await supabaseClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
         }
 
         async function signOut() {
@@ -163,78 +145,77 @@
         function render() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             const container = document.getElementById('main-container');
-            const alertContainer = document.getElementById('expiry-alerts');
             const alertBox = document.getElementById('alerts-container');
+            const alertContainer = document.getElementById('expiry-alerts');
             
-            let total = 0;
+            let totalWallet = 0;
             const grouped = {};
             const expiringSoon = [];
             const today = new Date();
 
             allCoupons.forEach(c => {
-                // בדיקת תוקף להתרעות
+                // בדיקת תוקף
                 if (c.expiry_date) {
-                    const exp = new Date(c.expiry_date);
-                    const diffDays = (exp - today) / (1000 * 60 * 60 * 24);
-                    if (diffDays >= 0 && diffDays <= 7) expiringSoon.push(c);
+                    const diff = (new Date(c.expiry_date) - today) / (1000 * 60 * 60 * 24);
+                    if (diff >= 0 && diff <= 7) expiringSoon.push(c);
                 }
 
                 if ((c.company || "").toLowerCase().includes(query) || (c.code_or_link || "").toLowerCase().includes(query)) {
                     const name = c.company || "אחר";
-                    if (!grouped[name]) grouped[name] = [];
-                    grouped[name].push(c);
-                    total += parseFloat(String(c.value).replace(/[^0-9.]/g, '')) || 0;
+                    if (!grouped[name]) grouped[name] = { list: [], sum: 0 };
+                    grouped[name].list.push(c);
+                    const val = parseFloat(String(c.value).replace(/[^0-9.]/g, '')) || 0;
+                    grouped[name].sum += val;
+                    totalWallet += val;
                 }
             });
 
-            // רינדור התראות
+            // הצגת התראות
             if (expiringSoon.length > 0 && !query) {
                 alertBox.classList.remove('hidden');
                 alertContainer.innerHTML = expiringSoon.map(c => `
-                    <div class="min-w-[200px] bg-white p-4 rounded-2xl border-r-4 border-danger shadow-sm flex flex-col justify-between">
-                        <span class="font-black text-sm">${c.company}</span>
-                        <span class="text-danger text-[10px] font-bold">פג בקרוב: ${c.expiry_date}</span>
+                    <div class="min-w-[140px] bg-white p-3 rounded-2xl border border-orange-100 shadow-sm">
+                        <p class="text-[10px] font-bold text-orange-400 uppercase leading-none mb-1">פג בקרוב</p>
+                        <p class="text-xs font-extrabold truncate">${c.company}</p>
                     </div>
                 `).join('');
-            } else {
-                alertBox.classList.add('hidden');
-            }
+            } else { alertBox.classList.add('hidden'); }
 
-            document.getElementById('total-value').innerText = `₪${total.toLocaleString()}`;
-            document.getElementById('coupon-count').innerText = `(${allCoupons.length} קופונים)`;
+            document.getElementById('total-value').innerText = `₪${totalWallet.toLocaleString()}`;
+            document.getElementById('coupon-count').innerText = `${allCoupons.length} קופונים פעילים`;
             container.innerHTML = '';
 
             Object.keys(grouped).forEach((name, idx) => {
-                const group = grouped[name];
+                const groupData = grouped[name];
                 container.innerHTML += `
-                    <div class="coupon-card bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div onclick="toggleGroup(${idx})" class="p-5 flex justify-between items-center cursor-pointer active:bg-slate-50 transition-colors">
+                    <div class="modern-card bg-white rounded-3xl overflow-hidden shadow-sm">
+                        <div onclick="toggleGroup(${idx})" class="p-5 flex justify-between items-center cursor-pointer active:bg-slate-50">
                             <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-2xl bg-primary/5 text-primary flex items-center justify-center font-black text-lg border border-primary/10">${name.charAt(0)}</div>
-                                <div>
-                                    <h3 class="font-extrabold text-slate-800">${name}</h3>
-                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${group.length} יחידות</p>
-                                </div>
+                                <div class="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 font-bold border border-slate-100">${name.charAt(0)}</div>
+                                <h3 class="font-extrabold text-slate-800">${name}</h3>
                             </div>
-                            <span class="material-symbols-outlined text-slate-300 transition-transform" id="icon-${idx}">expand_more</span>
+                            <div class="flex items-center gap-3">
+                                <span class="amount-badge px-3 py-1 rounded-full text-xs font-black">₪${groupData.sum.toLocaleString()}</span>
+                                <span class="material-symbols-rounded text-slate-300 transition-transform" id="icon-${idx}">expand_more</span>
+                            </div>
                         </div>
-                        <div id="group-${idx}" class="hidden px-5 pb-5 space-y-4">
-                            ${group.map(c => {
+                        <div id="group-${idx}" class="hidden px-5 pb-5 space-y-3">
+                            ${groupData.list.map(c => {
                                 const isExpiring = c.expiry_date && (new Date(c.expiry_date) - today) / (1000 * 60 * 60 * 24) <= 7;
                                 return `
-                                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 relative overflow-hidden">
-                                    ${isExpiring ? '<div class="absolute top-0 right-0 bg-danger text-white text-[8px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-tighter">פג בקרוב!</div>' : ''}
+                                <div class="bg-secondary p-5 rounded-2xl relative border border-slate-50">
                                     <div class="flex justify-between items-start mb-4">
-                                        <div class="text-primary font-black text-2xl tracking-tighter">${c.value}</div>
-                                        <div class="text-left">
-                                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${c.expiry_date || 'ללא תוקף'}</div>
+                                        <div>
+                                            <p class="text-lg font-black text-primary leading-none mb-1">${c.value}</p>
+                                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${c.expiry_date || 'ללא תוקף'}</p>
                                         </div>
+                                        ${isExpiring ? '<span class="bg-orange-500 text-white text-[8px] font-black px-2 py-1 rounded-full">פג בקרוב</span>' : ''}
                                     </div>
-                                    <div class="bg-white p-3 rounded-xl text-center font-mono text-xs text-slate-500 border border-dashed border-slate-200 mb-4 select-all">${c.code_or_link}</div>
+                                    <div class="bg-white/50 p-3 rounded-xl text-center font-mono text-xs text-slate-400 border border-dashed border-slate-200 mb-4 select-all truncate">${c.code_or_link}</div>
                                     <div class="flex gap-2">
-                                        <button onclick="copy('${c.code_or_link}')" class="flex-1 bg-slate-900 text-white py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform">העתק קוד</button>
-                                        <button onclick="openEdit(${c.id})" class="bg-white p-3 rounded-xl text-slate-400 border border-slate-100 active:scale-95 transition-transform"><span class="material-symbols-outlined text-sm">edit</span></button>
-                                        <button onclick="deleteFromCloud(${c.id})" class="bg-white p-3 rounded-xl text-danger border border-slate-100 active:scale-95 transition-transform"><span class="material-symbols-outlined text-sm">delete</span></button>
+                                        <button onclick="copy('${c.code_or_link}')" class="flex-1 bg-dark text-white py-3 rounded-xl text-xs font-bold active:scale-95 transition-transform">העתק קוד</button>
+                                        <button onclick="openEdit(${c.id})" class="bg-white p-3 rounded-xl text-slate-400 border border-slate-100"><span class="material-symbols-rounded text-sm">edit</span></button>
+                                        <button onclick="deleteFromCloud(${c.id})" class="bg-white p-3 rounded-xl text-red-400 border border-slate-100"><span class="material-symbols-rounded text-sm">delete</span></button>
                                     </div>
                                 </div>`;
                             }).join('')}
@@ -251,12 +232,9 @@
         }
 
         function openAddModal() {
-            document.getElementById('modalTitle').innerText = "הוספה לארנק";
+            document.getElementById('modalTitle').innerText = "קופון חדש";
             document.getElementById('edit_id').value = 'new';
-            document.getElementById('edit_company').value = '';
-            document.getElementById('edit_value').value = '';
-            document.getElementById('edit_code').value = '';
-            document.getElementById('edit_expiry').value = '';
+            ['edit_company', 'edit_value', 'edit_code', 'edit_expiry'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('editModal').classList.remove('hidden');
         }
 
@@ -275,27 +253,14 @@
 
         async function saveToCloud() {
             const id = document.getElementById('edit_id').value;
-            const payload = {
-                company: document.getElementById('edit_company').value,
-                value: document.getElementById('edit_value').value,
-                code_or_link: document.getElementById('edit_code').value,
-                expiry_date: document.getElementById('edit_expiry').value
-            };
-
-            if (id === 'new') {
-                await supabaseClient.from('coupons').insert([payload]);
-            } else {
-                await supabaseClient.from('coupons').update(payload).eq('id', id);
-            }
-            closeEdit();
-            loadFromCloud();
+            const payload = { company: document.getElementById('edit_company').value, value: document.getElementById('edit_value').value, code_or_link: document.getElementById('edit_code').value, expiry_date: document.getElementById('edit_expiry').value };
+            if (id === 'new') await supabaseClient.from('coupons').insert([payload]);
+            else await supabaseClient.from('coupons').update(payload).eq('id', id);
+            closeEdit(); loadFromCloud();
         }
 
         async function deleteFromCloud(id) {
-            if (confirm("להסיר מהארנק המשותף?")) {
-                await supabaseClient.from('coupons').delete().eq('id', id);
-                loadFromCloud();
-            }
+            if (confirm("להסיר מהארנק?")) { await supabaseClient.from('coupons').delete().eq('id', id); loadFromCloud(); }
         }
 
         function copy(t) {
@@ -303,11 +268,8 @@
             const btn = event.target;
             const original = btn.innerText;
             btn.innerText = "הועתק! ✓";
-            btn.classList.replace('bg-slate-900', 'bg-green-600');
-            setTimeout(() => {
-                btn.innerText = original;
-                btn.classList.replace('bg-green-600', 'bg-slate-900');
-            }, 1500);
+            btn.style.backgroundColor = "#00C853";
+            setTimeout(() => { btn.innerText = original; btn.style.backgroundColor = "#1a1a1a"; }, 1500);
         }
 
         window.onload = checkUser;
