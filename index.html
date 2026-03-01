@@ -6,6 +6,7 @@
     <title>הארנק שלי - מאובטח</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
@@ -134,7 +135,7 @@
             try {
                 const bytes = CryptoJS.AES.decrypt(ciphertext, groupEncryptionKey);
                 const original = bytes.toString(CryptoJS.enc.Utf8);
-                return original || ciphertext; // אם נכשל, נחזיר את המקור
+                return original || ciphertext; // אם נכשל (למשל קופון ישן שלא הוצפן), נחזיר את המקור
             } catch (e) { return ciphertext; }
         }
 
