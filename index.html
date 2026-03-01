@@ -201,7 +201,7 @@
         }
 
         async function loadFromCloud() {
-            const { data, error } = await supabaseClient.from('coupons').select('*').order('is_redeemed', { ascending: true }).order('expiry_date', { ascending: true });
+            const { data, error } = await supabaseClient.from('coupons').select('*').order('is_redeemed', { ascending: true }).order('company', { ascending: true });
             if (data) {
                 allCoupons = data.map(c => ({ ...c, code_or_link: decrypt(c.code_or_link) }));
                 updateAutocomplete();
@@ -211,13 +211,11 @@
         }
 
         function updateAutocomplete() {
-            // רשימות מותגים נפוצים + קיימים
             const companies = [...new Set(allCoupons.map(c => c.company).filter(Boolean))];
             const defaultCompanies = ["רמי לוי", "שופרסל", "מקס סטוק", "פוקס", "טרמינל X", "סופר-פארם", "וולט"];
             const finalCompanies = [...new Set([...companies, ...defaultCompanies])].sort();
             document.getElementById('companiesList').innerHTML = finalCompanies.map(name => `<option value="${name}">`).join('');
 
-            // רשימת קטגוריות נפוצות + קיימות
             const categories = [...new Set(allCoupons.map(c => c.category).filter(Boolean))];
             const defaultCats = ["מזון", "פארם", "אופנה", "בית", "מסעדות"];
             const finalCats = [...new Set([...categories, ...defaultCats])].sort();
@@ -246,18 +244,32 @@
             render();
         }
 
+        // הפונקציה המרכזית שתוקנה - קיבוץ הקופונים לרשתות (אקורדיון)
         function render() {
             const container = document.getElementById('main-container');
+            
+            // סינון לפי חוצץ (קטגוריה)
             const filteredCoupons = selectedTab === 'הכל' ? allCoupons : allCoupons.filter(c => c.category === selectedTab);
 
             // חישוב סך הכל (₪) לחוצץ הנוכחי
             let totalVal = 0;
+            const grouped = {};
+
+            // מעבר על הקופונים המסוננים ויצירת קבוצות לפי מותג
             filteredCoupons.forEach(c => {
+                const name = c.company || "אחר";
+                if (!grouped[name]) grouped[name] = { list: [], sum: 0 };
+                
+                grouped[name].list.push(c);
+                
+                // סופרים סכומים רק לקופונים שלא מומשו
                 if(!c.is_redeemed) {
                     const val = parseFloat(String(c.value).replace(/[^0-9.]/g, '')) || 0;
+                    grouped[name].sum += val;
                     totalVal += val;
                 }
             });
+
             document.getElementById('total-value').innerText = `סה"כ: ₪${totalVal.toLocaleString()}`;
 
             if (filteredCoupons.length === 0) {
@@ -265,45 +277,69 @@
                 return;
             }
 
-            container.innerHTML = filteredCoupons.map(c => {
-                const isRedeemed = c.is_redeemed;
-                const isLink = c.code_or_link && (c.code_or_link.includes('http') || c.code_or_link.includes('.co.il'));
-                
+            // רינדור הקבוצות
+            container.innerHTML = Object.keys(grouped).map((name, idx) => {
+                const g = grouped[name];
                 return `
-                <div class="${isRedeemed ? 'bg-slate-50 opacity-60' : 'bg-white'} p-5 rounded-3xl shadow-sm border ${isRedeemed ? 'border-transparent' : 'border-slate-200'} mb-4 relative overflow-hidden">
-                    
-                    ${isRedeemed ? '<div class="absolute top-4 left-4 bg-slate-200 text-slate-500 text-[10px] px-2 py-1 rounded-md font-bold uppercase">מומש</div>' : ''}
-
-                    <div class="flex justify-between items-start mb-3">
-                        <div>
-                            <p class="text-xl font-black text-primary mb-1 ${isRedeemed ? 'text-slate-400' : ''}">${c.value || '₪0'}</p>
-                            <p class="font-bold text-slate-500 text-sm ${isRedeemed ? 'line-through' : ''}">${c.company || 'ללא שם'}</p>
-                            <p class="text-[11px] font-bold text-slate-400 mt-1 flex items-center gap-1">
-                                <span class="material-symbols-rounded text-[13px]">calendar_month</span> 
-                                ${c.expiry_date ? 'תוקף: ' + c.expiry_date : 'ללא תוקף'}
-                            </p>
+                <div class="bg-white rounded-3xl overflow-hidden shadow-sm mb-4 border border-slate-200">
+                    <div onclick="toggleGroup(${idx})" class="p-5 flex justify-between items-center cursor-pointer active:bg-slate-50 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 font-bold border border-slate-100">${name.charAt(0)}</div>
+                            <h3 class="font-extrabold text-slate-800">${name}</h3>
                         </div>
-                        
-                        <button onclick="toggleRedeemed(${c.id}, ${isRedeemed})" class="w-12 h-12 rounded-xl flex items-center justify-center transition-colors shadow-sm ${isRedeemed ? 'bg-slate-200 text-slate-500' : 'bg-green-50 text-green-600 border border-green-100'}">
-                            <span class="material-symbols-rounded text-2xl">${isRedeemed ? 'undo' : 'check'}</span>
-                        </button>
+                        <div class="flex items-center gap-3">
+                            <span class="bg-green-50 text-green-700 px-3 py-1 rounded-full text-[10px] font-black tracking-tighter">₪${g.sum.toLocaleString()}</span>
+                            <span class="material-symbols-rounded text-slate-300 transition-transform" id="icon-${idx}">expand_more</span>
+                        </div>
                     </div>
                     
-                    <div class="bg-slate-50 p-3 rounded-xl text-center font-mono font-bold text-lg text-slate-700 break-all select-all border border-slate-100 mb-3 ${isRedeemed ? 'line-through text-slate-400' : ''}">
-                        ${c.code_or_link}
-                    </div>
+                    <div id="group-${idx}" class="hidden px-5 pb-5 space-y-3 bg-slate-50/50 pt-3 border-t border-slate-100">
+                        ${g.list.map(c => {
+                            const isRedeemed = c.is_redeemed;
+                            const isLink = c.code_or_link && (c.code_or_link.includes('http') || c.code_or_link.includes('.co.il'));
+                            
+                            return `
+                            <div class="${isRedeemed ? 'bg-white opacity-60' : 'bg-white'} p-4 rounded-2xl shadow-sm border ${isRedeemed ? 'border-transparent' : 'border-slate-200'} relative overflow-hidden">
+                                
+                                ${isRedeemed ? '<div class="absolute top-3 left-3 bg-slate-200 text-slate-500 text-[10px] px-2 py-1 rounded-md font-bold uppercase">מומש</div>' : ''}
 
-                    <div class="flex gap-2">
-                        ${isLink ? `<button onclick="window.open('${c.code_or_link.startsWith('http') ? c.code_or_link : 'https://' + c.code_or_link}', '_blank')" class="flex-1 bg-primary text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-sm"><span class="material-symbols-rounded text-[16px]">open_in_new</span>פתח אתר</button>` : ''}
-                        
-                        <button onclick="copyCode('${c.code_or_link}')" class="flex-1 bg-dark text-white py-2.5 rounded-xl text-xs font-bold shadow-sm">העתק קוד</button>
-                        
-                        <button onclick="openEdit(${c.id})" class="w-10 bg-white rounded-xl text-slate-400 border border-slate-200 flex items-center justify-center"><span class="material-symbols-rounded text-[18px]">edit</span></button>
-                        
-                        <button onclick="deleteCoupon(${c.id})" class="w-10 bg-white rounded-xl text-red-400 border border-slate-200 flex items-center justify-center"><span class="material-symbols-rounded text-[18px]">delete</span></button>
+                                <div class="flex justify-between items-start mb-3">
+                                    <div>
+                                        <p class="text-lg font-black text-primary mb-1 ${isRedeemed ? 'text-slate-400' : ''}">${c.value || '₪0'}</p>
+                                        <p class="text-[11px] font-bold text-slate-400 flex items-center gap-1">
+                                            <span class="material-symbols-rounded text-[13px]">calendar_month</span> 
+                                            ${c.expiry_date ? 'תוקף: ' + c.expiry_date : 'ללא תוקף'}
+                                        </p>
+                                    </div>
+                                    <button onclick="toggleRedeemed(${c.id}, ${isRedeemed})" class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm ${isRedeemed ? 'bg-slate-200 text-slate-500' : 'bg-green-50 text-green-600 border border-green-100'}">
+                                        <span class="material-symbols-rounded text-xl">${isRedeemed ? 'undo' : 'check'}</span>
+                                    </button>
+                                </div>
+                                
+                                <div class="bg-slate-50 p-3 rounded-xl text-center font-mono font-bold text-lg text-slate-700 break-all select-all border border-slate-100 mb-3 ${isRedeemed ? 'line-through text-slate-400' : ''}">
+                                    ${c.code_or_link}
+                                </div>
+
+                                <div class="flex gap-2">
+                                    ${isLink ? `<button onclick="window.open('${c.code_or_link.startsWith('http') ? c.code_or_link : 'https://' + c.code_or_link}', '_blank')" class="flex-1 bg-primary text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-sm"><span class="material-symbols-rounded text-[16px]">open_in_new</span>פתח אתר</button>` : ''}
+                                    <button onclick="copyCode('${c.code_or_link}')" class="flex-1 bg-dark text-white py-2 rounded-xl text-xs font-bold shadow-sm">העתק קוד</button>
+                                    <button onclick="openEdit(${c.id})" class="w-10 h-8 bg-white rounded-xl text-slate-400 border border-slate-200 flex items-center justify-center"><span class="material-symbols-rounded text-[16px]">edit</span></button>
+                                    <button onclick="deleteCoupon(${c.id})" class="w-10 h-8 bg-white rounded-xl text-red-400 border border-slate-200 flex items-center justify-center"><span class="material-symbols-rounded text-[16px]">delete</span></button>
+                                </div>
+                            </div>
+                            `;
+                        }).join('')}
                     </div>
                 </div>
-            `}).join('');
+                `;
+            }).join('');
+        }
+
+        function toggleGroup(idx) {
+            const el = document.getElementById(`group-${idx}`);
+            const icon = document.getElementById(`icon-${idx}`);
+            el.classList.toggle('hidden');
+            icon.style.transform = el.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
         }
 
         function copyCode(text) {
