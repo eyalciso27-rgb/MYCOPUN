@@ -1,0 +1,6 @@
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.toggle-checkbox:checked { right: 0; border-color: #00C853; }
+.toggle-checkbox:checked + .toggle-label { background-color: #00C853; }
+.toggle-checkbox { right: 0; z-index: 1; border-color: #e2e8f0; transition: all 0.3s; }
+.toggle-label { width: 3rem; height: 1.5rem; background-color: #cbd5e1; border-radius: 9999px; transition: all 0.3s; }
