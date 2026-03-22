@@ -14,9 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:wght@400;600&display=swap" rel="stylesheet"/>
 
     <script>
-        const supabaseUrl = 'https://iaihwnbbebjsirlhezwb.supabase.co';
-        const supabaseKey = 'sb_publishable_JOxGwNl2y2S-wUL2Xp3LLA_Xn9UxEHJ';
-        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+        // כאן השארנו רק את הגדרות העיצוב של Tailwind
         tailwind.config = { theme: { extend: { colors: { primary: "#00C853", dark: "#1a1a1a" }, fontFamily: { sans: ['Assistant', 'sans-serif'] } } } }
     </script>
     <style>
@@ -149,6 +147,7 @@
     </div>
 
     <script>
+        // כאן נמצאת ההגדרה היחידה של סופאבייס!
         const supabaseUrl = 'https://iaihwnbbebjsirlhezwb.supabase.co';
         const supabaseKey = 'sb_publishable_JOxGwNl2y2S-wUL2Xp3LLA_Xn9UxEHJ';
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
@@ -324,7 +323,7 @@
 
             container.innerHTML = Object.keys(grouped).map((name, idx) => {
                 const g = grouped[name]; 
-                const isOpen = false; // וידוא שהכל סגור (כולל Dream Card)
+                const isOpen = false; 
                 const groupIds = g.list.map(c => c.id);
                 const allSelected = groupIds.length > 0 && groupIds.every(id => selectedCoupons.has(id));
 
@@ -348,7 +347,6 @@
                             const isRedeemed = c.is_redeemed;
                             const isChecked = selectedCoupons.has(c.id);
                             
-                            // ההגנה החדשה מפני שגיאות של מספרים
                             const codeStr = String(c.code_or_link || ''); 
                             const isLink = codeStr.includes('http') || codeStr.includes('.co.il');
 
