@@ -7,6 +7,9 @@ let profile = null;
 let groupKey = null;
 let selectedTab = 'הכל';
 
+// משתנה חדש למעקב אחרי הקופונים המסומנים
+let selectedCoupons = new Set(); 
+
 function safeStr(str) { return str ? str.replace(/'/g, "\\'").replace(/"/g, '&quot;') : ''; }
 
 window.toggleGroup = function(idx) {
@@ -24,6 +27,7 @@ async function checkUser() {
         const { data: userProfile } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
         if (userProfile) {
             profile = userProfile;
+            profile.email = session.user.email;
             document.getElementById('login-screen').classList.add('hidden');
             if (profile.is_approved) {
                 document.getElementById('app-content').classList.remove('hidden');
@@ -86,7 +90,76 @@ function renderTabs() {
     `).join('');
 }
 
-function selectTab(tab) { selectedTab = tab; renderTabs(); render(); }
+function selectTab(tab) { 
+    selectedTab = tab; 
+    selectedCoupons.clear(); // מנקה בחירות במעבר בין חוצצים
+    updateBulkActionsUI();
+    renderTabs(); 
+    render(); 
+}
+
+// --- פונקציות הבחירה החדשות ---
+window.toggleCouponSelection = function(id, isChecked) {
+    if(isChecked) selectedCoupons.add(id);
+    else selectedCoupons.delete(id);
+    updateBulkActionsUI();
+};
+
+window.toggleGroupSelection = function(idx, isChecked) {
+    // מציאת הרשת שעליה לחצו
+    const filteredCoupons = selectedTab === 'הכל' ? allCoupons : allCoupons.filter(c => c.category === selectedTab);
+    const grouped = {};
+    filteredCoupons.forEach(c => {
+        const name = c.company || "אחר";
+        if (!grouped[name]) grouped[name] = { list: [] };
+        grouped[name].list.push(c);
+    });
+    
+    const groupName = Object.keys(grouped)[idx];
+    const groupCoupons = grouped[groupName].list;
+    
+    // סימון או ביטול סימון לכל הקופונים ברשת הזו
+    groupCoupons.forEach(c => {
+        if(isChecked) selectedCoupons.add(c.id);
+        else selectedCoupons.delete(c.id);
+    });
+    
+    render(); // מרענן כדי להראות את ה-V על הקופונים
+    updateBulkActionsUI();
+};
+
+window.updateBulkActionsUI = function() {
+    const bar = document.getElementById('bulk-actions-bar');
+    const countSpan = document.getElementById('bulk-selected-count');
+    if(selectedCoupons.size > 0) {
+        countSpan.innerText = selectedCoupons.size;
+        bar.classList.remove('hidden');
+        bar.classList.add('flex');
+    } else {
+        bar.classList.add('hidden');
+        bar.classList.remove('flex');
+    }
+};
+
+window.clearSelection = function() {
+    selectedCoupons.clear();
+    render();
+    updateBulkActionsUI();
+};
+
+window.deleteSelectedCoupons = async function() {
+    if(selectedCoupons.size === 0) return;
+    if(confirm(`האם אתה בטוח שברצונך למחוק ${selectedCoupons.size} קופונים לצמיתות?`)) {
+        const idsToDelete = Array.from(selectedCoupons);
+        
+        // מחיקה מרובה מהשרת בפקודה אחת!
+        await supabaseClient.from('coupons').delete().in('id', idsToDelete);
+        
+        selectedCoupons.clear();
+        updateBulkActionsUI();
+        loadFromCloud(); // טוען מחדש מהשרת
+    }
+};
 
 function render() {
     const container = document.getElementById('main-container');
@@ -111,11 +184,19 @@ function render() {
 
     container.innerHTML = Object.keys(grouped).map((name, idx) => {
         const g = grouped[name]; const isOpen = idx === 0; 
+        
+        // בדיקה האם כל הקופונים בקבוצה הזו נבחרו (בשביל תיבת ה-V הראשית)
+        const groupIds = g.list.map(c => c.id);
+        const allSelected = groupIds.length > 0 && groupIds.every(id => selectedCoupons.has(id));
+
         return `
         <div class="bg-white rounded-3xl overflow-hidden shadow-sm mb-4 border border-slate-200">
             <div onclick="toggleGroup(${idx})" class="p-5 flex justify-between items-center cursor-pointer active:bg-slate-50 transition-colors">
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 font-bold border border-slate-100">${name.charAt(0)}</div>
+                <div class="flex items-center gap-3 sm:gap-4">
+                    <div class="flex items-center" onclick="event.stopPropagation()">
+                        <input type="checkbox" class="w-5 h-5 accent-primary cursor-pointer border-slate-300 rounded" ${allSelected ? 'checked' : ''} onchange="toggleGroupSelection(${idx}, this.checked)">
+                    </div>
+                    <div class="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 font-bold border border-slate-100 hidden sm:flex">${name.charAt(0)}</div>
                     <h3 class="font-extrabold text-slate-800">${name}</h3>
                 </div>
                 <div class="flex items-center gap-3">
@@ -127,10 +208,18 @@ function render() {
                 ${g.list.map(c => {
                     const isRedeemed = c.is_redeemed;
                     const isLink = c.code_or_link && (c.code_or_link.includes('http') || c.code_or_link.includes('.co.il'));
+                    const isChecked = selectedCoupons.has(c.id);
+
                     return `
-                    <div class="${isRedeemed ? 'bg-white opacity-60' : 'bg-white'} p-4 rounded-2xl shadow-sm border ${isRedeemed ? 'border-transparent' : 'border-slate-200'} relative overflow-hidden">
-                        ${isRedeemed ? '<div class="absolute top-3 left-3 bg-slate-200 text-slate-500 text-[10px] px-2 py-1 rounded-md font-bold uppercase">מומש</div>' : ''}
-                        <div class="flex justify-between items-start mb-3">
+                    <div class="${isRedeemed ? 'bg-white opacity-60' : 'bg-white'} ${isChecked ? 'ring-2 ring-primary border-transparent' : 'border-slate-200'} p-4 rounded-2xl shadow-sm border relative overflow-hidden transition-all">
+                        
+                        <div class="absolute top-4 right-4 z-10">
+                            <input type="checkbox" class="w-5 h-5 accent-primary cursor-pointer border-slate-300 rounded" value="${c.id}" ${isChecked ? 'checked' : ''} onchange="toggleCouponSelection(${c.id}, this.checked)">
+                        </div>
+
+                        ${isRedeemed ? '<div class="absolute top-4 left-4 bg-slate-200 text-slate-500 text-[10px] px-2 py-1 rounded-md font-bold uppercase">מומש</div>' : ''}
+                        
+                        <div class="flex justify-between items-start mb-3 mt-8">
                             <div>
                                 <p class="text-lg font-black text-primary mb-1 ${isRedeemed ? 'text-slate-400' : ''}">${c.value || '₪0'}</p>
                                 <p class="text-[11px] font-bold text-slate-400 flex items-center gap-1"><span class="material-symbols-rounded text-[13px]">calendar_month</span> ${c.expiry_date ? 'תוקף: ' + c.expiry_date : 'ללא תוקף'}</p>
@@ -145,8 +234,7 @@ function render() {
                             ${isLink ? `<button onclick="window.open('${escapeStr(c.code_or_link.startsWith('http') ? c.code_or_link : 'https://' + c.code_or_link)}', '_blank')" class="flex-1 bg-primary text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-sm"><span class="material-symbols-rounded text-[16px]">open_in_new</span>פתח</button>` : ''}
                             <button onclick="copyCode('${safeStr(c.code_or_link)}')" class="flex-1 bg-dark text-white py-2 rounded-xl text-xs font-bold shadow-sm">העתק</button>
                             <button onclick="openEdit(${c.id})" class="w-10 h-8 bg-white rounded-xl text-slate-400 border border-slate-200 flex items-center justify-center"><span class="material-symbols-rounded text-[16px]">edit</span></button>
-                            <button onclick="deleteCoupon(${c.id})" class="w-10 h-8 bg-white rounded-xl text-red-400 border border-slate-200 flex items-center justify-center"><span class="material-symbols-rounded text-[16px]">delete</span></button>
-                        </div>
+                            </div>
                     </div>`;
                 }).join('')}
             </div>
@@ -158,8 +246,8 @@ window.copyCode = function(text) { navigator.clipboard.writeText(text); alert("�
 window.escapeStr = function(str) { return str.replace(/'/g, "\\'").replace(/"/g, '&quot;'); };
 
 window.toggleRedeemed = async function(id, state) { await supabaseClient.from('coupons').update({ is_redeemed: !state }).eq('id', id); loadFromCloud(); };
-window.deleteCoupon = async function(id) { if(confirm("למחוק קופון זה?")) { await supabaseClient.from('coupons').delete().eq('id', id); loadFromCloud(); } };
 
+// כל שאר הפונקציות (ייבוא, ייצוא, מודאלים) ללא שינוי מהגרסה הקודמת
 window.openBulkAddModal = function() {
     document.getElementById('rows-container').innerHTML = '';
     addCouponRow(); 
@@ -263,21 +351,56 @@ window.handleExcelUpload = function(event) {
     reader.readAsBinaryString(file);
 };
 
-window.exportToExcel = function() {
+window.downloadTemplate = function() {
+    const ws = XLSX.utils.json_to_sheet([{
+        'מותג': '', 'קטגוריה': '', 'שווי': '', 'תוקף': 'YYYY-MM-DD', 'קוד או לינק': '', 'CVV': ''
+    }]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "תבנית");
+    XLSX.writeFile(wb, "Coupon_Template.xlsx");
+};
+
+window.openExportModal = function() {
     if(allCoupons.length === 0) { alert("אין קופונים לייצוא!"); return; }
-    const dataToExport = allCoupons.map(c => ({
-        'מותג / network': c.company || '',
-        'קטגוריה / חוצץ': c.category || '',
-        'שווי / value': c.value || '',
-        'תוקף / expiry': c.expiry_date || '',
+    const companies = [...new Set(allCoupons.map(c => c.company || 'אחר'))].sort();
+    let html = '';
+    companies.forEach(comp => {
+        html += `
+        <label class="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors">
+            <input type="checkbox" class="export-comp-cb w-4 h-4 accent-primary" value="${comp}" checked>
+            <span class="text-slate-700 font-bold">${comp}</span>
+        </label>`;
+    });
+    document.getElementById('export-companies-list').innerHTML = html;
+    document.getElementById('export_all_checkbox').checked = true;
+    document.getElementById('exportModal').classList.remove('hidden');
+};
+
+window.closeExportModal = function() { document.getElementById('exportModal').classList.add('hidden'); };
+
+window.toggleAllExport = function(el) {
+    document.querySelectorAll('.export-comp-cb').forEach(cb => cb.checked = el.checked);
+};
+
+window.executeExport = function() {
+    const selected = Array.from(document.querySelectorAll('.export-comp-cb:checked')).map(cb => cb.value);
+    if(selected.length === 0) { alert("אנא בחר לפחות מותג אחד לייצוא"); return; }
+    
+    const toExport = allCoupons.filter(c => selected.includes(c.company || 'אחר')).map(c => ({
+        'מותג': c.company || '',
+        'קטגוריה': c.category || '',
+        'שווי': c.value || '',
+        'תוקף': c.expiry_date || '',
         'קוד או לינק': c.code_or_link || '',
         'CVV': c.cvv || '',
         'סטטוס': c.is_redeemed ? 'מומש' : 'פעיל'
     }));
-    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    
+    const ws = XLSX.utils.json_to_sheet(toExport);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Coupons");
     XLSX.writeFile(wb, "My_Smart_Wallet_Coupons.xlsx");
+    closeExportModal();
 };
 
 window.toggleSubOptions = function() {
@@ -308,13 +431,21 @@ window.saveSettings = async function() {
 };
 
 window.testEmail = async function() {
-    alert("מפעיל סריקה ידנית מול השרת... ממתין לתשובה.");
+    const email = prompt("לאיזו כתובת מייל תרצה לשלוח את הודעת הבדיקה?", profile?.email || "");
+    if(!email) return;
+
+    alert("שולח בקשה לשרת... אנא המתן.");
     try {
-        const res = await fetch('/api/send-alerts');
+        const res = await fetch('/api/test-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        });
         const data = await res.json();
-        alert("תשובת השרת התקבלה:\n" + JSON.stringify(data));
+        if (data.id) alert("✅ המייל נשלח בהצלחה! בדוק את תיבת הדואר שלך (וגם את תיקיית הספאם).");
+        else alert("❌ שגיאה בשליחה מהשרת:\n" + JSON.stringify(data));
     } catch (err) {
-        alert("שגיאה! השרת לא ענה.\nודא שהעלית את קובץ api/send-alerts.js ל-GitHub ושהוא התעדכן ב-Vercel.");
+        alert("❌ שגיאת תקשורת עם השרת:\n" + err.message);
     }
 };
 
