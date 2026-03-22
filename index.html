@@ -12,14 +12,13 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:wght@400;600&display=swap" rel="stylesheet"/>
-    
     <link rel="stylesheet" href="style.css">
 
     <script>
         tailwind.config = { theme: { extend: { colors: { primary: "#00C853", dark: "#1a1a1a" }, fontFamily: { sans: ['Assistant', 'sans-serif'] } } } }
     </script>
 </head>
-<body class="bg-[#F4F7F6] text-dark font-sans pb-32">
+<body class="bg-[#F4F7F6] text-dark font-sans pb-32 relative">
 
     <div id="login-screen" class="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center p-8 text-center">
         <div class="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mb-8"><span class="material-symbols-rounded text-5xl text-primary">lock</span></div>
@@ -42,7 +41,7 @@
                     <p id="total-value" class="text-[14px] text-primary font-bold">סה"כ: ₪0</p>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="exportToExcel()" title="ייצוא לאקסל" class="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center border border-green-200"><span class="material-symbols-rounded text-[20px]">download</span></button>
+                    <button onclick="openExportModal()" title="ייצוא לאקסל" class="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center border border-green-200"><span class="material-symbols-rounded text-[20px]">download</span></button>
                     <button onclick="openSettings()" class="w-10 h-10 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center border border-slate-200"><span class="material-symbols-rounded text-[20px]">settings</span></button>
                     <button onclick="signOut()" class="w-10 h-10 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center border border-slate-200"><span class="material-symbols-rounded text-[20px]">logout</span></button>
                 </div>
@@ -57,33 +56,58 @@
         </button>
     </div>
 
+    <div id="bulk-actions-bar" class="hidden fixed bottom-28 left-6 right-6 z-50 bg-slate-800 text-white py-3 px-5 rounded-2xl shadow-2xl items-center justify-between transition-all">
+        <div class="flex items-center gap-2">
+            <span class="material-symbols-rounded text-primary">check_box</span>
+            <span class="font-bold"><span id="bulk-selected-count">0</span> נבחרו</span>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="deleteSelectedCoupons()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm transition-colors flex items-center gap-1">
+                <span class="material-symbols-rounded text-[18px]">delete</span> מחק
+            </button>
+            <button onclick="clearSelection()" class="bg-slate-700 hover:bg-slate-600 text-white p-2 rounded-xl flex items-center justify-center transition-colors">
+                <span class="material-symbols-rounded text-[18px]">close</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="exportModal" class="hidden fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm">
+        <div class="bg-white rounded-t-[2.5rem] sm:rounded-3xl w-full max-w-md p-8 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-extrabold">ייצוא קופונים לאקסל</h3>
+                <button onclick="closeExportModal()" class="text-slate-300"><span class="material-symbols-rounded">close</span></button>
+            </div>
+            <p class="text-sm text-slate-500 mb-4">בחר אילו מותגים תרצה לייצא:</p>
+            <div class="bg-slate-50 p-3 rounded-xl mb-4 border border-slate-200">
+                <label class="flex items-center gap-2 font-bold text-slate-700 cursor-pointer">
+                    <input type="checkbox" id="export_all_checkbox" checked onchange="toggleAllExport(this)" class="w-4 h-4 accent-primary"> בחר הכל
+                </label>
+            </div>
+            <div id="export-companies-list" class="overflow-y-auto flex-1 space-y-2 mb-6 border border-slate-100 p-4 rounded-2xl"></div>
+            <button onclick="executeExport()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+                <span class="material-symbols-rounded">description</span> הורד קובץ אקסל
+            </button>
+        </div>
+    </div>
+
     <div id="bulkAddModal" class="hidden fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm">
         <div class="bg-white rounded-t-[2.5rem] sm:rounded-3xl w-full max-w-5xl p-6 shadow-2xl overflow-y-auto max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-extrabold">הוספת קופונים</h3>
                 <div class="flex gap-2">
-                    <label for="excel_upload" class="cursor-pointer bg-green-50 text-green-700 px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-1 border border-green-200 hover:bg-green-100 transition-colors">
-                        <span class="material-symbols-rounded text-[18px]">upload_file</span> טען אקסל
-                    </label>
+                    <button onclick="downloadTemplate()" class="bg-slate-100 text-slate-600 px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-1 hover:bg-slate-200 transition-colors"><span class="material-symbols-rounded text-[18px]">download</span> תבנית לאקסל</button>
+                    <label for="excel_upload" class="cursor-pointer bg-green-50 text-green-700 px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-1 border border-green-200 hover:bg-green-100 transition-colors"><span class="material-symbols-rounded text-[18px]">upload_file</span> טען אקסל</label>
                     <input type="file" id="excel_upload" accept=".xlsx, .xls" class="hidden" onchange="handleExcelUpload(event)">
                     <button onclick="closeBulkAdd()" class="text-slate-400 bg-slate-100 w-9 h-9 flex items-center justify-center rounded-full"><span class="material-symbols-rounded text-[20px]">close</span></button>
                 </div>
             </div>
-
             <p class="text-xs text-slate-400 mb-4">הכנס קופונים ידנית לשורות או טען קובץ אקסל.</p>
-
             <datalist id="companiesList"></datalist>
             <datalist id="categoriesList"></datalist>
-
             <div id="rows-container" class="flex-1 overflow-y-auto space-y-2 mb-4 p-1"></div>
-
             <div class="flex flex-col sm:flex-row gap-3 mt-auto">
-                <button onclick="addCouponRow()" class="flex-1 bg-slate-50 text-slate-500 py-4 rounded-2xl font-bold border border-slate-200 border-dashed active:scale-95 transition-transform flex items-center justify-center gap-2">
-                    <span class="material-symbols-rounded">playlist_add</span> שורה חדשה
-                </button>
-                <button onclick="saveBulkToCloud()" class="flex-[2] bg-primary text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
-                    <span class="material-symbols-rounded">enhanced_encryption</span> הצפן ושמור הכל
-                </button>
+                <button onclick="addCouponRow()" class="flex-1 bg-slate-50 text-slate-500 py-4 rounded-2xl font-bold border border-slate-200 border-dashed active:scale-95 transition-transform flex items-center justify-center gap-2"><span class="material-symbols-rounded">playlist_add</span> שורה חדשה</button>
+                <button onclick="saveBulkToCloud()" class="flex-[2] bg-primary text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2"><span class="material-symbols-rounded">enhanced_encryption</span> הצפן ושמור הכל</button>
             </div>
         </div>
     </div>
@@ -94,7 +118,6 @@
                 <h3 class="text-xl font-extrabold">הגדרות התראות</h3>
                 <button onclick="closeSettings()" class="text-slate-300"><span class="material-symbols-rounded">close</span></button>
             </div>
-            
             <div class="flex items-center justify-between bg-white border border-slate-200 p-5 rounded-2xl mb-6 shadow-sm">
                 <div>
                     <span class="font-extrabold text-slate-800 block">התראות למייל</span>
@@ -105,27 +128,13 @@
                     <label for="master_toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
                 </div>
             </div>
-
             <div id="sub_options" class="space-y-3 mb-6 transition-opacity duration-300">
-                <label class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl cursor-pointer">
-                    <span class="font-bold text-slate-700">14 ימים לפני</span>
-                    <input type="checkbox" id="set_14_days" class="w-5 h-5 accent-primary">
-                </label>
-                <label class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl cursor-pointer">
-                    <span class="font-bold text-slate-700">7 ימים לפני</span>
-                    <input type="checkbox" id="set_7_days" class="w-5 h-5 accent-primary">
-                </label>
-                <label class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl cursor-pointer">
-                    <span class="font-bold text-slate-700">יום אחד לפני</span>
-                    <input type="checkbox" id="set_1_day" class="w-5 h-5 accent-primary">
-                </label>
+                <label class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl cursor-pointer"><span class="font-bold text-slate-700">14 ימים לפני</span><input type="checkbox" id="set_14_days" class="w-5 h-5 accent-primary"></label>
+                <label class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl cursor-pointer"><span class="font-bold text-slate-700">7 ימים לפני</span><input type="checkbox" id="set_7_days" class="w-5 h-5 accent-primary"></label>
+                <label class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl cursor-pointer"><span class="font-bold text-slate-700">יום אחד לפני</span><input type="checkbox" id="set_1_day" class="w-5 h-5 accent-primary"></label>
             </div>
-
             <button onclick="saveSettings()" class="w-full bg-dark text-white py-4 rounded-2xl font-bold active:scale-95 transition-transform mb-4">שמור הגדרות</button>
-
-            <button onclick="testEmail()" class="w-full flex items-center justify-center gap-2 bg-amber-50 text-amber-600 py-3 rounded-xl font-bold border border-amber-200 active:scale-95 transition-transform">
-                <span class="material-symbols-rounded text-[18px]">mark_email_read</span> בדוק מערכת מיילים (טסט)
-            </button>
+            <button onclick="testEmail()" class="w-full flex items-center justify-center gap-2 bg-amber-50 text-amber-600 py-3 rounded-xl font-bold border border-amber-200 active:scale-95 transition-transform"><span class="material-symbols-rounded text-[18px]">mark_email_read</span> בדוק מערכת מיילים (טסט)</button>
         </div>
     </div>
 
