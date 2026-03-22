@@ -14,6 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:wght@400;600&display=swap" rel="stylesheet"/>
 
     <script>
+        /* כאן השארנו אך ורק את העיצוב! בלי סופאבייס בכלל */
         tailwind.config = { theme: { extend: { colors: { primary: "#00C853", dark: "#1a1a1a" }, fontFamily: { sans: ['Assistant', 'sans-serif'] } } } }
     </script>
     <style>
@@ -156,16 +157,16 @@
         let selectedTab = 'הכל';
         let selectedCoupons = new Set(); 
 
-        function safeStr(str) { return str ? str.replace(/'/g, "\\'").replace(/"/g, '&quot;') : ''; }
+        function safeStr(str) { return str ? String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;') : ''; }
 
-        function toggleGroup(idx) {
+        window.toggleGroup = function(idx) {
             const el = document.getElementById(`group-${idx}`);
             const icon = document.getElementById(`icon-${idx}`);
             if(el) {
                 el.classList.toggle('hidden');
                 if(icon) icon.style.transform = el.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
             }
-        }
+        };
 
         async function checkUser() {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -197,7 +198,8 @@
             }
         }
 
-        function encrypt(text) { return text ? CryptoJS.AES.encrypt(text, groupKey).toString() : ""; }
+        function encrypt(text) { return text ? CryptoJS.AES.encrypt(String(text), groupKey).toString() : ""; }
+        
         function decrypt(ciphertext) {
             if(!ciphertext) return "";
             try {
@@ -211,7 +213,9 @@
             const { data } = await supabaseClient.from('coupons').select('*').order('is_redeemed', { ascending: true }).order('company', { ascending: true });
             if (data) {
                 allCoupons = data.map(c => ({ 
-                    ...c, code_or_link: decrypt(c.code_or_link), cvv: decrypt(c.cvv)
+                    ...c, 
+                    code_or_link: decrypt(c.code_or_link), 
+                    cvv: decrypt(c.cvv)
                 }));
                 updateAutocomplete();
                 renderTabs();
@@ -242,13 +246,13 @@
             render(); 
         }
 
-        function toggleCouponSelection(id, isChecked) {
+        window.toggleCouponSelection = function(id, isChecked) {
             if(isChecked) selectedCoupons.add(id);
             else selectedCoupons.delete(id);
             updateBulkActionsUI();
-        }
+        };
 
-        function toggleGroupSelection(idx, isChecked) {
+        window.toggleGroupSelection = function(idx, isChecked) {
             const filteredCoupons = selectedTab === 'הכל' ? allCoupons : allCoupons.filter(c => c.category === selectedTab);
             const grouped = {};
             filteredCoupons.forEach(c => {
@@ -265,9 +269,9 @@
             });
             render(); 
             updateBulkActionsUI();
-        }
+        };
 
-        function updateBulkActionsUI() {
+        window.updateBulkActionsUI = function() {
             const bar = document.getElementById('bulk-actions-bar');
             const countSpan = document.getElementById('bulk-selected-count');
             if(selectedCoupons.size > 0) {
@@ -276,15 +280,15 @@
             } else {
                 bar.classList.add('hidden'); bar.classList.remove('flex');
             }
-        }
+        };
 
-        function clearSelection() {
+        window.clearSelection = function() {
             selectedCoupons.clear();
             render();
             updateBulkActionsUI();
-        }
+        };
 
-        async function deleteSelectedCoupons() {
+        window.deleteSelectedCoupons = async function() {
             if(selectedCoupons.size === 0) return;
             if(confirm(`האם למחוק ${selectedCoupons.size} קופונים לצמיתות?`)) {
                 const idsToDelete = Array.from(selectedCoupons);
@@ -293,7 +297,7 @@
                 updateBulkActionsUI();
                 loadFromCloud();
             }
-        }
+        };
 
         function render() {
             const container = document.getElementById('main-container');
@@ -317,7 +321,8 @@
             }
 
             container.innerHTML = Object.keys(grouped).map((name, idx) => {
-                const g = grouped[name]; const isOpen = idx === 0; 
+                const g = grouped[name]; 
+                const isOpen = false; 
                 const groupIds = g.list.map(c => c.id);
                 const allSelected = groupIds.length > 0 && groupIds.every(id => selectedCoupons.has(id));
 
@@ -339,8 +344,10 @@
                     <div id="group-${idx}" class="${isOpen ? '' : 'hidden'} px-5 pb-5 space-y-3 bg-slate-50/50 pt-3 border-t border-slate-100">
                         ${g.list.map(c => {
                             const isRedeemed = c.is_redeemed;
-                            const isLink = c.code_or_link && (c.code_or_link.includes('http') || c.code_or_link.includes('.co.il'));
                             const isChecked = selectedCoupons.has(c.id);
+                            
+                            const codeStr = String(c.code_or_link || ''); 
+                            const isLink = codeStr.includes('http') || codeStr.includes('.co.il');
 
                             return `
                             <div class="${isRedeemed ? 'bg-white opacity-60' : 'bg-white'} ${isChecked ? 'ring-2 ring-primary border-transparent' : 'border-slate-200'} p-4 rounded-2xl shadow-sm border relative overflow-hidden transition-all">
@@ -357,12 +364,12 @@
                                     <button onclick="toggleRedeemed(${c.id}, ${isRedeemed})" class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm ${isRedeemed ? 'bg-slate-200 text-slate-500' : 'bg-green-50 text-green-600 border border-green-100'}"><span class="material-symbols-rounded text-xl">${isRedeemed ? 'undo' : 'check'}</span></button>
                                 </div>
                                 <div class="bg-slate-50 p-3 rounded-xl text-center font-mono font-bold text-lg text-slate-700 break-all select-all border border-slate-100 mb-3 ${isRedeemed ? 'line-through text-slate-400' : ''}">
-                                    <span>${c.code_or_link}</span>
+                                    <span>${codeStr}</span>
                                     ${c.cvv ? `<div class="text-sm text-slate-500 mt-1 bg-white inline-block px-2 py-0.5 rounded-lg border border-slate-200 shadow-sm">CVV: ${c.cvv}</div>` : ''}
                                 </div>
                                 <div class="flex gap-2">
-                                    ${isLink ? `<button onclick="window.open('${escapeStr(c.code_or_link.startsWith('http') ? c.code_or_link : 'https://' + c.code_or_link)}', '_blank')" class="flex-1 bg-primary text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-sm"><span class="material-symbols-rounded text-[16px]">open_in_new</span>פתח</button>` : ''}
-                                    <button onclick="copyCode('${safeStr(c.code_or_link)}')" class="flex-1 bg-dark text-white py-2 rounded-xl text-xs font-bold shadow-sm">העתק</button>
+                                    ${isLink ? `<button onclick="window.open('${window.escapeStr(codeStr.startsWith('http') ? codeStr : 'https://' + codeStr)}', '_blank')" class="flex-1 bg-primary text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-sm"><span class="material-symbols-rounded text-[16px]">open_in_new</span>פתח</button>` : ''}
+                                    <button onclick="copyCode('${safeStr(codeStr)}')" class="flex-1 bg-dark text-white py-2 rounded-xl text-xs font-bold shadow-sm">העתק</button>
                                     <button onclick="openEdit(${c.id})" class="w-10 h-8 bg-white rounded-xl text-slate-400 border border-slate-200 flex items-center justify-center"><span class="material-symbols-rounded text-[16px]">edit</span></button>
                                 </div>
                             </div>`;
@@ -372,19 +379,19 @@
             }).join('');
         }
 
-        function copyCode(text) { navigator.clipboard.writeText(text); alert("הקוד הועתק!"); }
-        function escapeStr(str) { return str.replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
-        async function toggleRedeemed(id, state) { await supabaseClient.from('coupons').update({ is_redeemed: !state }).eq('id', id); loadFromCloud(); }
+        window.escapeStr = function(str) { return str ? String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;') : ''; };
+        window.copyCode = function(text) { navigator.clipboard.writeText(text); alert("הקוד הועתק!"); };
+        window.toggleRedeemed = async function(id, state) { await supabaseClient.from('coupons').update({ is_redeemed: !state }).eq('id', id); loadFromCloud(); };
 
-        function openBulkAddModal() {
+        window.openBulkAddModal = function() {
             document.getElementById('rows-container').innerHTML = '';
             addCouponRow(); 
             document.getElementById('bulkAddModal').classList.remove('hidden');
-        }
+        };
 
-        function closeBulkAdd() { document.getElementById('bulkAddModal').classList.add('hidden'); }
+        window.closeBulkAdd = function() { document.getElementById('bulkAddModal').classList.add('hidden'); };
 
-        function addCouponRow(company='', category='', value='', expiry='', code='', cvv='', idToEdit='new') {
+        window.addCouponRow = function(company='', category='', value='', expiry='', code='', cvv='', idToEdit='new') {
             const rowId = 'row-' + Date.now() + Math.floor(Math.random() * 1000);
             const html = `
             <div class="coupon-row flex flex-wrap lg:flex-nowrap gap-2 items-center bg-slate-50 p-3 rounded-2xl border border-slate-200 relative" id="${rowId}" data-db-id="${idToEdit}">
@@ -399,16 +406,16 @@
             document.getElementById('rows-container').insertAdjacentHTML('beforeend', html);
             const container = document.getElementById('rows-container');
             container.scrollTop = container.scrollHeight;
-        }
+        };
 
-        function openEdit(id) {
+        window.openEdit = function(id) {
             const c = allCoupons.find(x => x.id === id);
             document.getElementById('rows-container').innerHTML = '';
             addCouponRow(c.company || '', c.category || '', c.value || '', c.expiry_date || '', c.code_or_link || '', c.cvv || '', c.id);
             document.getElementById('bulkAddModal').classList.remove('hidden');
-        }
+        };
 
-        async function saveBulkToCloud() {
+        window.saveBulkToCloud = async function() {
             const rows = document.querySelectorAll('.coupon-row');
             if(rows.length === 0) return closeBulkAdd();
 
@@ -447,9 +454,9 @@
 
             closeBulkAdd();
             loadFromCloud();
-        }
+        };
 
-        function handleExcelUpload(event) {
+        window.handleExcelUpload = function(event) {
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
@@ -466,27 +473,33 @@
                 }
 
                 excelRows.forEach(row => {
-                    const company = row['network'] || row['מותג'] || '';
-                    const category = row['קטגוריה'] || row['category'] || 'כללי';
-                    const value = row['value'] || row['שווי'] || '';
-                    const expiry = row['expiry'] || row['תוקף'] || '';
-                    const code = row['code_or_link'] || row['קוד'] || '';
-                    const cvv = row['cvv'] || row['CVV'] || ''; 
+                    let company = '', category = 'כללי', value = '', expiry = '', code = '', cvv = '';
+                    
+                    Object.keys(row).forEach(key => {
+                        const lowerKey = key.toLowerCase();
+                        if (lowerKey.includes('מותג') || lowerKey.includes('network')) company = row[key];
+                        else if (lowerKey.includes('קטגוריה') || lowerKey.includes('חוצץ') || lowerKey.includes('category')) category = row[key];
+                        else if (lowerKey.includes('שווי') || lowerKey.includes('value')) value = row[key];
+                        else if (lowerKey.includes('תוקף') || lowerKey.includes('expiry')) expiry = row[key];
+                        else if (lowerKey.includes('קוד') || lowerKey.includes('לינק') || lowerKey.includes('code')) code = row[key];
+                        else if (lowerKey.includes('cvv')) cvv = row[key];
+                    });
+
                     if(company || code || cvv) addCouponRow(company, category, value, expiry, code, cvv);
                 });
                 event.target.value = ''; 
             };
             reader.readAsBinaryString(file);
-        }
+        };
 
-        function downloadTemplate() {
+        window.downloadTemplate = function() {
             const ws = XLSX.utils.json_to_sheet([{'מותג': '', 'קטגוריה': '', 'שווי': '', 'תוקף': 'YYYY-MM-DD', 'קוד או לינק': '', 'CVV': ''}]);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "תבנית");
             XLSX.writeFile(wb, "Coupon_Template.xlsx");
-        }
+        };
 
-        function openExportModal() {
+        window.openExportModal = function() {
             if(allCoupons.length === 0) { alert("אין קופונים לייצוא!"); return; }
             const companies = [...new Set(allCoupons.map(c => c.company || 'אחר'))].sort();
             let html = '';
@@ -500,12 +513,12 @@
             document.getElementById('export-companies-list').innerHTML = html;
             document.getElementById('export_all_checkbox').checked = true;
             document.getElementById('exportModal').classList.remove('hidden');
-        }
+        };
 
-        function closeExportModal() { document.getElementById('exportModal').classList.add('hidden'); }
-        function toggleAllExport(el) { document.querySelectorAll('.export-comp-cb').forEach(cb => cb.checked = el.checked); }
+        window.closeExportModal = function() { document.getElementById('exportModal').classList.add('hidden'); };
+        window.toggleAllExport = function(el) { document.querySelectorAll('.export-comp-cb').forEach(cb => cb.checked = el.checked); };
 
-        function executeExport() {
+        window.executeExport = function() {
             const selected = Array.from(document.querySelectorAll('.export-comp-cb:checked')).map(cb => cb.value);
             if(selected.length === 0) { alert("אנא בחר לפחות מותג אחד לייצוא"); return; }
             
@@ -519,25 +532,25 @@
             XLSX.utils.book_append_sheet(wb, ws, "Coupons");
             XLSX.writeFile(wb, "My_Smart_Wallet_Coupons.xlsx");
             closeExportModal();
-        }
+        };
 
-        function toggleSubOptions() {
+        window.toggleSubOptions = function() {
             const master = document.getElementById('master_toggle').checked;
             document.getElementById('sub_options').style.opacity = master ? '1' : '0.5';
             document.getElementById('sub_options').style.pointerEvents = master ? 'auto' : 'none';
-        }
+        };
 
-        function openSettings() {
+        window.openSettings = function() {
             document.getElementById('master_toggle').checked = profile.email_alerts_active ?? true;
             document.getElementById('set_14_days').checked = profile.remind_14_days ?? true;
             document.getElementById('set_7_days').checked = profile.remind_7_days ?? true;
             document.getElementById('set_1_day').checked = profile.remind_1_day ?? true;
             toggleSubOptions(); document.getElementById('settingsModal').classList.remove('hidden');
-        }
+        };
 
-        function closeSettings() { document.getElementById('settingsModal').classList.add('hidden'); }
+        window.closeSettings = function() { document.getElementById('settingsModal').classList.add('hidden'); };
 
-        async function saveSettings() {
+        window.saveSettings = async function() {
             const master = document.getElementById('master_toggle').checked;
             const r14 = document.getElementById('set_14_days').checked;
             const r7 = document.getElementById('set_7_days').checked;
@@ -546,9 +559,9 @@
             await supabaseClient.from('profiles').update({ email_alerts_active: master, remind_14_days: r14, remind_7_days: r7, remind_1_day: r1 }).eq('id', profile.id);
             profile.email_alerts_active = master; profile.remind_14_days = r14; profile.remind_7_days = r7; profile.remind_1_day = r1;
             closeSettings();
-        }
+        };
 
-        async function testEmail() {
+        window.testEmail = async function() {
             const email = prompt("לאיזו כתובת מייל תרצה לשלוח את הודעת הבדיקה?", profile?.email || "");
             if(!email) return;
 
@@ -565,10 +578,10 @@
             } catch (err) {
                 alert("❌ שגיאת תקשורת עם השרת:\n" + err.message);
             }
-        }
+        };
 
-        async function signInWithGoogle() { await supabaseClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); }
-        async function signOut() { await supabaseClient.auth.signOut(); window.location.reload(); }
+        window.signInWithGoogle = async function() { await supabaseClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); };
+        window.signOut = async function() { await supabaseClient.auth.signOut(); window.location.reload(); };
 
         window.onload = checkUser;
     </script>
