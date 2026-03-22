@@ -14,7 +14,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:wght@400;600&display=swap" rel="stylesheet"/>
 
     <script>
-        /* כאן השארנו אך ורק את העיצוב! בלי סופאבייס בכלל */
         tailwind.config = { theme: { extend: { colors: { primary: "#00C853", dark: "#1a1a1a" }, fontFamily: { sans: ['Assistant', 'sans-serif'] } } } }
     </script>
     <style>
@@ -456,12 +455,14 @@
             loadFromCloud();
         };
 
+        // --- מנגנון הטיפול המעודכן באקסל (מטפל בתאריכים מספריים!) ---
         window.handleExcelUpload = function(event) {
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
-                const workbook = XLSX.read(e.target.result, {type: 'binary'});
+                // מורה לספרייה להמיר תאריכים פנימיים של אקסל לתאריכים אמיתיים בזיכרון
+                const workbook = XLSX.read(e.target.result, {type: 'binary', cellDates: true});
                 const excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[workbook.SheetNames[0]]);
                 
                 const container = document.getElementById('rows-container');
@@ -477,12 +478,28 @@
                     
                     Object.keys(row).forEach(key => {
                         const lowerKey = key.toLowerCase();
-                        if (lowerKey.includes('מותג') || lowerKey.includes('network')) company = row[key];
-                        else if (lowerKey.includes('קטגוריה') || lowerKey.includes('חוצץ') || lowerKey.includes('category')) category = row[key];
-                        else if (lowerKey.includes('שווי') || lowerKey.includes('value')) value = row[key];
-                        else if (lowerKey.includes('תוקף') || lowerKey.includes('expiry')) expiry = row[key];
-                        else if (lowerKey.includes('קוד') || lowerKey.includes('לינק') || lowerKey.includes('code')) code = row[key];
-                        else if (lowerKey.includes('cvv')) cvv = row[key];
+                        let cellValue = row[key];
+
+                        if (lowerKey.includes('מותג') || lowerKey.includes('network')) company = cellValue;
+                        else if (lowerKey.includes('קטגוריה') || lowerKey.includes('חוצץ') || lowerKey.includes('category')) category = cellValue;
+                        else if (lowerKey.includes('שווי') || lowerKey.includes('value')) value = cellValue;
+                        else if (lowerKey.includes('תוקף') || lowerKey.includes('expiry')) {
+                            // מנגנון חכם להמרת תאריכים
+                            if (cellValue instanceof Date) {
+                                // מניעת באג אזור זמן שמוריד יום אחורה
+                                const offset = cellValue.getTimezoneOffset() * 60000;
+                                expiry = new Date(cellValue.getTime() - offset).toISOString().split('T')[0];
+                            } else if (!isNaN(cellValue) && typeof cellValue === 'number') {
+                                // מקרה חירום בו זה נשאר כמספר סריאלי של אקסל
+                                const jsDate = new Date((cellValue - 25569) * 86400 * 1000);
+                                expiry = jsDate.toISOString().split('T')[0];
+                            } else {
+                                // טקסט רגיל שהוזן נכון
+                                expiry = String(cellValue).trim();
+                            }
+                        }
+                        else if (lowerKey.includes('קוד') || lowerKey.includes('לינק') || lowerKey.includes('code')) code = cellValue;
+                        else if (lowerKey.includes('cvv')) cvv = cellValue;
                     });
 
                     if(company || code || cvv) addCouponRow(company, category, value, expiry, code, cvv);
