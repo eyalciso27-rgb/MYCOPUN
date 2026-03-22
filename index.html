@@ -14,9 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:wght@400;600&display=swap" rel="stylesheet"/>
 
     <script>
-        const supabaseUrl = 'https://iaihwnbbebjsirlhezwb.supabase.co';
-        const supabaseKey = 'sb_publishable_JOxGwNl2y2S-wUL2Xp3LLA_Xn9UxEHJ';
-        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+        /* כאן השארנו אך ורק את העיצוב! בלי סופאבייס בכלל */
         tailwind.config = { theme: { extend: { colors: { primary: "#00C853", dark: "#1a1a1a" }, fontFamily: { sans: ['Assistant', 'sans-serif'] } } } }
     </script>
     <style>
@@ -458,7 +456,6 @@
             loadFromCloud();
         };
 
-        // --- הנה השינוי המרכזי: קורא אקסל חכם! ---
         window.handleExcelUpload = function(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -478,7 +475,6 @@
                 excelRows.forEach(row => {
                     let company = '', category = 'כללי', value = '', expiry = '', code = '', cvv = '';
                     
-                    // המערכת החכמה מחפשת את המילים בכותרות של הקובץ שלך, לא משנה איך קראו להן!
                     Object.keys(row).forEach(key => {
                         const lowerKey = key.toLowerCase();
                         if (lowerKey.includes('מותג') || lowerKey.includes('network')) company = row[key];
