@@ -14,7 +14,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:wght@400;600&display=swap" rel="stylesheet"/>
 
     <script>
-        // כאן השארנו רק את הגדרות העיצוב של Tailwind
+        const supabaseUrl = 'https://iaihwnbbebjsirlhezwb.supabase.co';
+        const supabaseKey = 'sb_publishable_JOxGwNl2y2S-wUL2Xp3LLA_Xn9UxEHJ';
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
         tailwind.config = { theme: { extend: { colors: { primary: "#00C853", dark: "#1a1a1a" }, fontFamily: { sans: ['Assistant', 'sans-serif'] } } } }
     </script>
     <style>
@@ -147,7 +149,6 @@
     </div>
 
     <script>
-        // כאן נמצאת ההגדרה היחידה של סופאבייס!
         const supabaseUrl = 'https://iaihwnbbebjsirlhezwb.supabase.co';
         const supabaseKey = 'sb_publishable_JOxGwNl2y2S-wUL2Xp3LLA_Xn9UxEHJ';
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
@@ -457,6 +458,7 @@
             loadFromCloud();
         };
 
+        // --- הנה השינוי המרכזי: קורא אקסל חכם! ---
         window.handleExcelUpload = function(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -474,12 +476,19 @@
                 }
 
                 excelRows.forEach(row => {
-                    const company = row['network'] || row['מותג'] || '';
-                    const category = row['קטגוריה'] || row['category'] || 'כללי';
-                    const value = row['value'] || row['שווי'] || '';
-                    const expiry = row['expiry'] || row['תוקף'] || '';
-                    const code = row['code_or_link'] || row['קוד'] || '';
-                    const cvv = row['cvv'] || row['CVV'] || ''; 
+                    let company = '', category = 'כללי', value = '', expiry = '', code = '', cvv = '';
+                    
+                    // המערכת החכמה מחפשת את המילים בכותרות של הקובץ שלך, לא משנה איך קראו להן!
+                    Object.keys(row).forEach(key => {
+                        const lowerKey = key.toLowerCase();
+                        if (lowerKey.includes('מותג') || lowerKey.includes('network')) company = row[key];
+                        else if (lowerKey.includes('קטגוריה') || lowerKey.includes('חוצץ') || lowerKey.includes('category')) category = row[key];
+                        else if (lowerKey.includes('שווי') || lowerKey.includes('value')) value = row[key];
+                        else if (lowerKey.includes('תוקף') || lowerKey.includes('expiry')) expiry = row[key];
+                        else if (lowerKey.includes('קוד') || lowerKey.includes('לינק') || lowerKey.includes('code')) code = row[key];
+                        else if (lowerKey.includes('cvv')) cvv = row[key];
+                    });
+
                     if(company || code || cvv) addCouponRow(company, category, value, expiry, code, cvv);
                 });
                 event.target.value = ''; 
