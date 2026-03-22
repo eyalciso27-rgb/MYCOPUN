@@ -1,3 +1,4 @@
+#
 const supabaseUrl = 'https://iaihwnbbebjsirlhezwb.supabase.co';
 const supabaseKey = 'sb_publishable_JOxGwNl2y2S-wUL2Xp3LLA_Xn9UxEHJ';
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
